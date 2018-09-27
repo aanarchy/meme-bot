@@ -1,3 +1,4 @@
+"""Main bot."""
 from discord.ext import commands
 
 bot = commands.Bot(command_prefix='!', description='I help you run errands!')
