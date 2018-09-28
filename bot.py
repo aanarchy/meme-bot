@@ -1,7 +1,9 @@
 """Main bot."""
+import os
 from discord.ext import commands
 
 bot = commands.Bot(command_prefix='!', description='I help you run errands!')
+token = os.environ.get('TOKEN')
 
 @bot.event
 async def on_ready():
@@ -24,4 +26,4 @@ for extension in extensions:
     except Exception as exception:
         print('Failed to load extension %s.' % extension)
 
-bot.run(TOKEN)
+bot.run(token)

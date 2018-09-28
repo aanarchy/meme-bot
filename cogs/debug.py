@@ -1,17 +1,18 @@
-import discord
-from discord import commands
+"""Debug commands."""
+from discord.ext import commands
 
 class Debug:
-    
+    """Debug class."""
+
     def __init__(self, bot):
         self.bot = bot
-        
+
     @commands.command()
     @commands.is_owner()
-    """Logs out of the bot user."""
     async def logout(self, ctx):
-        await self.bot.logout()     
+        """Logs out of the bot user."""
+        await self.bot.logout()
 
 def setup(bot):
     """Sets up the cog."""
-    bot.add_cog(Debug(bot))           
+    bot.add_cog(Debug(bot))

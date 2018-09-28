@@ -26,14 +26,14 @@ class Moderation:
         """Testing embed."""
         guild = ctx.guild
         embed = await self.mod_log("Ban", "@JamieTONG", "Because I can.", "@LLaurence")
+        channels = guild.text_channels
         if 'mod_log' not in channels:
             overwrites = {
                 guild.me: discord.PermissionOverwrite(send_messages=True),
                 guild.members: discord.PermissionOverwrite(send_messages=True)
             }
-            channel = await guild.create_text_channel("mod_log", overwrites=overwrites)
+            log_channel = await guild.create_text_channel("mod_log", overwrites=overwrites)
         else:
-            channels = guild.text_channels    
             log_channel = discord.utils.get(channels, name="mod_log")
         await log_channel.send(embed=embed)
 
