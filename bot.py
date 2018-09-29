@@ -18,7 +18,7 @@ async def ping(ctx):
     await ctx.send("pong!")
 
 
-extensions = ['cogs.moderation', 'cogs.music', 'çogs.debug']
+extensions = ['cogs.moderation', 'cogs.music', 'cogs.debug']
 
 for extension in extensions:
     try:

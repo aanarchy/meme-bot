@@ -99,7 +99,8 @@ class Moderation:
             await user.add_roles(role)
             await ctx.send("I made %s a %s!" % (user.name, role.name))
         else:
-            await ctx.send("{author.name}, you don't have the permission to give that role to users!")
+            await ctx.send("{author.name}, you don't have the permission\
+            to give that role to users!")
 
 
     @commands.command()
@@ -110,7 +111,8 @@ class Moderation:
             await user.remove_roles(role)
             await ctx.send("I removed %s's %s role!" % (user.name, role.name))
         else:
-            await ctx.send("%s, you don't have the permission to remove roles from users!" % author.name)
+            await ctx.send("%s, you don't have the permission\
+            to remove roles from users!" % author.name)
 
     @commands.command()
     async def mute(self, ctx, user: discord.Member, reason):
@@ -150,7 +152,6 @@ class Moderation:
                 await ctx.send("%s is not muted!", user.name)
         else:
             await ctx.send("%s, you do not have the permission to mute other users!" % author.name)
-
 
 def setup(bot):
     """Sets up the cog."""
