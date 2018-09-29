@@ -30,7 +30,7 @@ class Moderation:
         if 'mod_log' not in channels:
             overwrites = {
                 guild.me: discord.PermissionOverwrite(send_messages=True),
-                guild.members: discord.PermissionOverwrite(send_messages=True)
+                guild.default_role: discord.PermissionOverwrite(send_messages=True)
             }
             log_channel = await guild.create_text_channel("mod_log", overwrites=overwrites)
         else:
