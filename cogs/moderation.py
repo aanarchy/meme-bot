@@ -20,8 +20,8 @@ class Moderation:
         embed.add_field(name="Reason:", value=reason, inline=False)
         embed.set_footer(text=moderator)
         return embed
-        
-    async def check_mod_log_exists(self):
+
+    async def check_mod_log_exists(self, ctx):
         """Checks if a mod_log channel exists."""
         guild = ctx.guild
         channels = guild.text_channels
@@ -32,9 +32,8 @@ class Moderation:
             }
             log_channel = await guild.create_text_channel("mod_log", overwrites=overwrites)
             return log_channel
-        else:
-            log_channel = discord.utils.get(channels, name="mod_log")
-            return log_channel
+        log_channel = discord.utils.get(channels, name="mod_log")
+        return log_channel
 
     @commands.command()
     async def clear(self, ctx, amount=100):
@@ -47,7 +46,7 @@ class Moderation:
                 messages.append(message)
             await channel.delete_messages(messages)
         else:
-            await ctx.send("%s, you do not have the permission to delete messages!" % author.name)
+            await ctx.send("{author.name}, you do not have the permission to delete messages!")
 
     @commands.command()
     async def kick(self, ctx, user: discord.Member, reason):
@@ -57,10 +56,10 @@ class Moderation:
             await user.kick(reason=reason)
             await ctx.send("Kicked %s." % (user.name))
             embed = await self.mod_log("Kick", user.name, reason, author.name)
-            log_channel = await self.check_mod_log_exists()
+            log_channel = await self.check_mod_log_exists(ctx)
             await log_channel.send(embed=embed)
         else:
-            await ctx.send("%s, you do not have the permission to kick that user!" % author.name)
+            await ctx.send("{author.name}, you do not have the permission to kick that user!")
 
 
     @commands.command()
@@ -71,10 +70,10 @@ class Moderation:
             await user.ban(reason=reason)
             await ctx.send("Banned %s from my house!" % (user.name))
             embed = await self.mod_log("Ban", user.name, reason, author.name)
-            log_channel = await self.check_mod_log_exists()
+            log_channel = await self.check_mod_log_exists(ctx)
             await log_channel.send(embed=embed)
         else:
-            await ctx.send("%s, you do not have the permission to ban that user!" % author.name)
+            await ctx.send("{author.name}, you do not have the permission to ban that user!")
 
 
     @commands.command()
@@ -86,10 +85,10 @@ class Moderation:
             await guild.unban(user, reason=reason)
             await ctx.send("Unbanned %s." % (user.name))
             embed = await self.mod_log("Unban", user.name, reason, author.name)
-            log_channel = await self.check_mod_log_exists()
+            log_channel = await self.check_mod_log_exists(ctx)
             await log_channel.send(embed=embed)
         else:
-            await ctx.send("%s, you do not have the permission to unban users!" % author.name)
+            await ctx.send("{author.name}, you do not have the permission to unban users!")
 
 
     @commands.command()
@@ -100,7 +99,7 @@ class Moderation:
             await user.add_roles(role)
             await ctx.send("I made %s a %s!" % (user.name, role.name))
         else:
-            await ctx.send("%s, you don't have the permission to give that role to users!" % author.name)
+            await ctx.send("{author.name}, you don't have the permission to give that role to users!")
 
 
     @commands.command()
@@ -118,7 +117,6 @@ class Moderation:
         """Mutes the specified user."""
         author = ctx.author
         guild = ctx.guild
-        user_roles = user.roles
         muted = discord.utils.get(guild.roles, name="Muted")
         if muted is None:
             await guild.create_role(name="Muted")
@@ -128,10 +126,10 @@ class Moderation:
                 await user.add_roles(muted, reason=reason)
                 await ctx.send("I muted %s!" % (user.name))
                 embed = await self.mod_log("Mute", user.name, reason, author.name)
-                log_channel = await self.check_mod_log_exists()
+                log_channel = await self.check_mod_log_exists(ctx)
                 await log_channel.send(embed=embed)
             else:
-                await ctx.send("%s is already muted!", user.name)    
+                await ctx.send("%s is already muted!", user.name)
         else:
             await ctx.send("%s, you don't have the permission to mute users!" % author.name)
 
@@ -140,17 +138,16 @@ class Moderation:
         """Unmutes the specified user."""
         author = ctx.author
         guild = ctx.guild
-        user_roles = user.roles
         muted = discord.utils.get(guild.roles, name="Muted")
         if author.guild_permissions.manage_roles:
             if "Muted" in user.roles:
                 await user.remove_roles(muted, reason=reason)
                 await ctx.send("I unmuted %s!" % (user.name))
                 embed = await self.mod_log("Unmute", user.name, reason, author.name)
-                log_channel = await self.check_mod_log_exists()
+                log_channel = await self.check_mod_log_exists(ctx)
                 await log_channel.send(embed=embed)
             else:
-                await ctx.send("%s is not muted!", user.name)   
+                await ctx.send("%s is not muted!", user.name)
         else:
             await ctx.send("%s, you do not have the permission to mute other users!" % author.name)
 
