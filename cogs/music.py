@@ -57,22 +57,30 @@ class Music:
     async def _play_next_song(self):
         """Plays next song."""
         if self.queue.empty():
+            self.voice_client.stop()
             await self.voice_client.disconnect()
+            self.voice_client = None
         else:
             source = self.queue.get_nowait()
             self.voice_client.play(discord.FFmpegPCMAudio(source),
                                    after=lambda e: self.play_next_song())
             self.voice_client.source = discord.PCMVolumeTransformer(self.voice_client.source)
             self.voice_client.volume = self._volume
+        return
 
     @commands.command()
     @commands.guild_only()
     async def join(self, ctx):
         """Joins author's channel."""
-        voice_channel = ctx.author.voice.channel
+        voice_state = ctx.author.voice
         self.voice_client = ctx.guild.voice_client
-        if not self.voice_client:
-            await voice_channel.connect()
+        if voice_state is None:
+            await ctx.send("You aren't in a voice channel!")
+        elif not self.voice_client:
+            voice_channel = voice_state.channel
+            self.voice_client = await voice_channel.connect()
+        else:
+            await ctx.send("I'm already in a voice channel!")
 
     @commands.command()
     @commands.guild_only()
@@ -95,7 +103,6 @@ class Music:
             await ctx.send("I queued up %s!" % (info.get("title", None)))
 
     @commands.command()
-    @commands.guild_only()
     async def stop(self, ctx):
         """Stops the voice client."""
         self.voice_client = ctx.guild.voice_client
@@ -103,6 +110,8 @@ class Music:
             if self.voice_client.is_playing():
                 self.voice_client.stop()
             await self.voice_client.disconnect()
+            del self.queue
+            self.queue = asyncio.Queue(maxsize=50)
         else:
             await ctx.send("I'm not connected to voice!")
 
@@ -148,10 +157,11 @@ class Music:
     @commands.guild_only()
     async def skip(self, ctx):
         """Skips next song."""
-        await asyncio.sleep(0.5)
+        self.voice_client = ctx.guild.voice_client
         if self.queue.empty():
-            await self.voice_client.stop()
+            self.voice_client.stop()
             await self.voice_client.disconnect()
+            self.voice_client = None
         else:
             source = self.queue.get_nowait()
             self.voice_client.source = discord.FFmpegPCMAudio(source)
