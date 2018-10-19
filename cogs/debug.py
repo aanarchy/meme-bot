@@ -4,6 +4,10 @@ from discord.ext import commands
 class Debug:
     """Debug class."""
 
+    async def on_ready(self):
+        """Prints when the cog is ready."""
+        print("Debug is ready!")
+
     def __init__(self, bot):
         self.bot = bot
 
