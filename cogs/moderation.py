@@ -8,11 +8,13 @@ class Moderation:
     def __init__(self, bot):
         self.bot = bot
 
+    @staticmethod
     async def on_ready(self):
         """Prints when the cog is ready."""
         print("Moderation is ready!")
 
-    async def mod_log(self, log_type, user, reason, moderator):
+    @staticmethod
+    async def mod_log(log_type, user, reason, moderator):
         """Mod logging."""
         embed = discord.Embed()
         embed.add_field(name="Type:", value=log_type, inline=True)
@@ -21,7 +23,8 @@ class Moderation:
         embed.set_footer(text=moderator)
         return embed
 
-    async def check_mod_log_exists(self, ctx):
+    @staticmethod
+    async def check_mod_log_exists(ctx):
         """Checks if a mod_log channel exists."""
         guild = ctx.guild
         channels = guild.text_channels
@@ -54,13 +57,11 @@ class Moderation:
         author = ctx.author
         if author.guild_permissions.kick_members and author.is_superset(user):
             await user.kick(reason=reason)
-            await ctx.send("Kicked %s." % (user.name))
             embed = await self.mod_log("Kick", user.name, reason, author.name)
             log_channel = await self.check_mod_log_exists(ctx)
             await log_channel.send(embed=embed)
         else:
             await ctx.send("{author.name}, you do not have the permission to kick that user!")
-
 
     @commands.command()
     async def ban(self, ctx, user: discord.Member, reason):
@@ -68,13 +69,11 @@ class Moderation:
         author = ctx.author
         if author.guild_permissions.ban_members and author.is_superset(user):
             await user.ban(reason=reason)
-            await ctx.send("Banned %s from my house!" % (user.name))
             embed = await self.mod_log("Ban", user.name, reason, author.name)
             log_channel = await self.check_mod_log_exists(ctx)
             await log_channel.send(embed=embed)
         else:
             await ctx.send("{author.name}, you do not have the permission to ban that user!")
-
 
     @commands.command()
     async def unban(self, ctx, user: discord.Member, reason):
@@ -83,13 +82,11 @@ class Moderation:
         guild = ctx.guild
         if author.guild_permissions.ban_members:
             await guild.unban(user, reason=reason)
-            await ctx.send("Unbanned %s." % (user.name))
             embed = await self.mod_log("Unban", user.name, reason, author.name)
             log_channel = await self.check_mod_log_exists(ctx)
             await log_channel.send(embed=embed)
         else:
             await ctx.send("{author.name}, you do not have the permission to unban users!")
-
 
     @commands.command()
     async def addrole(self, ctx, user: discord.Member, role: discord.Role):
@@ -97,11 +94,9 @@ class Moderation:
         author = ctx.author
         if author.guild_permissions.manage_roles and author.top_role >= role:
             await user.add_roles(role)
-            await ctx.send("I made %s a %s!" % (user.name, role.name))
         else:
             await ctx.send("{author.name}, you don't have the permission\
             to give that role to users!")
-
 
     @commands.command()
     async def removerole(self, ctx, user: discord.Member, role: discord.Role):
@@ -109,7 +104,6 @@ class Moderation:
         author = ctx.author
         if author.guild_permissions.manage_roles and author.is_superset(user):
             await user.remove_roles(role)
-            await ctx.send("I removed %s's %s role!" % (user.name, role.name))
         else:
             await ctx.send("%s, you don't have the permission\
             to remove roles from users!" % author.name)
@@ -126,7 +120,6 @@ class Moderation:
         if author.guild_permissions.manage_roles and author.is_superset(user):
             if "Muted" in user.roles:
                 await user.add_roles(muted, reason=reason)
-                await ctx.send("I muted %s!" % (user.name))
                 embed = await self.mod_log("Mute", user.name, reason, author.name)
                 log_channel = await self.check_mod_log_exists(ctx)
                 await log_channel.send(embed=embed)
@@ -144,7 +137,6 @@ class Moderation:
         if author.guild_permissions.manage_roles:
             if "Muted" in user.roles:
                 await user.remove_roles(muted, reason=reason)
-                await ctx.send("I unmuted %s!" % (user.name))
                 embed = await self.mod_log("Unmute", user.name, reason, author.name)
                 log_channel = await self.check_mod_log_exists(ctx)
                 await log_channel.send(embed=embed)

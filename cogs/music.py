@@ -1,6 +1,7 @@
 """Music commands."""
 import asyncio
 import pathlib
+import os
 
 import discord
 from discord.ext import commands
@@ -44,9 +45,19 @@ class Music:
         self.voice_client = None
         self._volume = 0.5
 
-    async def on_ready(self):
+    @staticmethod
+    async def on_ready():
         """Prints a message when the cog is ready."""
         print('Music is ready!')
+
+    @staticmethod
+    def clear_song_cache():
+        """Clears downloaded songs."""
+        directory = 'C:/Users/Jamie/PyCharmProjects/mom-bot'
+        songs = os.listdir()
+        for item in songs:
+            if item.endswith(".zip"):
+                os.remove(os.path.join(directory, item))
 
     def play_next_song(self):
         """Creates an event loop for _play_next_song."""
@@ -60,6 +71,7 @@ class Music:
             self.voice_client.stop()
             await self.voice_client.disconnect()
             self.voice_client = None
+            self.clear_song_cache()
         else:
             source = self.queue.get_nowait()
             self.voice_client.play(discord.FFmpegPCMAudio(source),
@@ -106,7 +118,7 @@ class Music:
     async def stop(self, ctx):
         """Stops the voice client."""
         self.voice_client = ctx.guild.voice_client
-        if not self.voice_client is None:
+        if self.voice_client is not None:
             if self.voice_client.is_playing():
                 self.voice_client.stop()
             await self.voice_client.disconnect()
@@ -120,7 +132,7 @@ class Music:
     async def pause(self, ctx):
         """Pauses the voice client."""
         self.voice_client = ctx.guild.voice_client
-        if not self.voice_client is None:
+        if self.voice_client is not None:
             if self.voice_client.is_paused():
                 await ctx.send("I'm already paused!")
             else:
@@ -133,7 +145,7 @@ class Music:
     async def resume(self, ctx):
         """Resumes the voice client."""
         self.voice_client = ctx.guild.voice_client
-        if not self.voice_client is None:
+        if self.voice_client is not None:
             if not self.voice_client.is_paused():
                 await ctx.send("I'm not paused!")
             else:
