@@ -175,6 +175,10 @@ class Music:
             self.voice_client.source = discord.PCMVolumeTransformer(self.voice_client.source)
             self.voice_client.volume = self._volume
 
+    @commands.command()
+    @commands.guild_only()
+    async def search(self, ctx, query):
+        pass
 
 def setup(bot):
     """Sets up the cog."""
