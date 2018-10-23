@@ -56,29 +56,26 @@ class Music:
         directory = 'C:/Users/Jamie/PyCharmProjects/mom-bot'
         songs = os.listdir()
         for item in songs:
-            if item.endswith(".zip"):
+            if item.endswith(".mp3"):
                 os.remove(os.path.join(directory, item))
 
-    def play_next_song(self):
-        """Creates an event loop for _play_next_song."""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self._play_next_song())
-
-    async def _play_next_song(self):
-        """Plays next song."""
+    def next_song_info(self):
         if self.queue.empty():
+            return None
+        return self.queue.get_nowait()
+
+    async def play_next_song(self, song=None):
+        """Plays next song."""
+        if song is None:
             self.voice_client.stop()
-            await self.voice_client.disconnect()
             self.voice_client = None
             self.clear_song_cache()
+            await self.voice_client.disconnect()
         else:
-            source = self.queue.get_nowait()
-            self.voice_client.play(discord.FFmpegPCMAudio(source),
-                                   after=lambda e: self.play_next_song())
+            self.voice_client.play(discord.FFmpegPCMAudio(song),
+                                       after=lambda e: )
             self.voice_client.source = discord.PCMVolumeTransformer(self.voice_client.source)
             self.voice_client.volume = self._volume
-        return
 
     @commands.command()
     @commands.guild_only()
@@ -103,11 +100,8 @@ class Music:
         if self.voice_client is None or voice_channel != self.voice_client.channel:
             self.voice_client = await voice_channel.connect()
         if not self.voice_client.is_playing():
-            source = self.youtube.download(url)
-            self.voice_client.play(discord.FFmpegPCMAudio(source),
-                                   after=lambda e: self.play_next_song())
-            self.voice_client.source = discord.PCMVolumeTransformer(self.voice_client.source)
-            self.voice_client.volume = self._volume
+            song = self.youtube.download(url)
+            await self.play_next_song(song)
             await ctx.send("I'm playing %s!" % (info.get("title", None)))
         else:
             song = self.youtube.download(url)

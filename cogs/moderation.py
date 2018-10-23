@@ -9,7 +9,7 @@ class Moderation:
         self.bot = bot
 
     @staticmethod
-    async def on_ready(self):
+    async def on_ready():
         """Prints when the cog is ready."""
         print("Moderation is ready!")
 
