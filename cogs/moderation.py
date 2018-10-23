@@ -24,18 +24,18 @@ class Moderation:
         return embed
 
     @staticmethod
-    async def check_mod_log_exists(ctx):
+    async def channel_exists(ctx, channel=None):
         """Checks if a mod_log channel exists."""
         guild = ctx.guild
         channels = guild.text_channels
-        if 'mod_log' not in channels:
+        if channel not in channels:
             overwrites = {
                 guild.me: discord.PermissionOverwrite(send_messages=True),
                 guild.default_role: discord.PermissionOverwrite(send_messages=True)
             }
-            log_channel = await guild.create_text_channel("mod_log", overwrites=overwrites)
+            log_channel = await guild.create_text_channel(channel, overwrites=overwrites)
             return log_channel
-        log_channel = discord.utils.get(channels, name="mod_log")
+        log_channel = discord.utils.get(channels, name=channel)
         return log_channel
 
     @commands.command()
@@ -58,7 +58,7 @@ class Moderation:
         if author.guild_permissions.kick_members and author.is_superset(user):
             await user.kick(reason=reason)
             embed = await self.mod_log("Kick", user.name, reason, author.name)
-            log_channel = await self.check_mod_log_exists(ctx)
+            log_channel = await self.check_channel_exists(ctx, "mod_log")
             await log_channel.send(embed=embed)
         else:
             await ctx.send("{author.name}, you do not have the permission to kick that user!")
@@ -70,7 +70,7 @@ class Moderation:
         if author.guild_permissions.ban_members and author.is_superset(user):
             await user.ban(reason=reason)
             embed = await self.mod_log("Ban", user.name, reason, author.name)
-            log_channel = await self.check_mod_log_exists(ctx)
+            log_channel = await self.check_channel_exists(ctx, "mod_log")
             await log_channel.send(embed=embed)
         else:
             await ctx.send("{author.name}, you do not have the permission to ban that user!")
@@ -83,7 +83,7 @@ class Moderation:
         if author.guild_permissions.ban_members:
             await guild.unban(user, reason=reason)
             embed = await self.mod_log("Unban", user.name, reason, author.name)
-            log_channel = await self.check_mod_log_exists(ctx)
+            log_channel = await self.check_channel_exists(ctx, "mod_log")
             await log_channel.send(embed=embed)
         else:
             await ctx.send("{author.name}, you do not have the permission to unban users!")
@@ -121,7 +121,7 @@ class Moderation:
             if "Muted" in user.roles:
                 await user.add_roles(muted, reason=reason)
                 embed = await self.mod_log("Mute", user.name, reason, author.name)
-                log_channel = await self.check_mod_log_exists(ctx)
+                log_channel = await self.check_channel_exists(ctx, "mod_log")
                 await log_channel.send(embed=embed)
             else:
                 await ctx.send("%s is already muted!", user.name)
@@ -138,7 +138,7 @@ class Moderation:
             if "Muted" in user.roles:
                 await user.remove_roles(muted, reason=reason)
                 embed = await self.mod_log("Unmute", user.name, reason, author.name)
-                log_channel = await self.check_mod_log_exists(ctx)
+                log_channel = await self.check_channel_exists(ctx, "mod_log")
                 await log_channel.send(embed=embed)
             else:
                 await ctx.send("%s is not muted!", user.name)

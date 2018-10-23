@@ -1,3 +1,2 @@
-Announce command.
 Fix bug when the last song ends the bot is at a void state.
 Add fun commands.
