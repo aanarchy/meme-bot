@@ -44,6 +44,7 @@ class Music:
         self.youtube = YoutubeSource()
         self.voice_client = None
         self._volume = 0.5
+        self.loop = asyncio.get_event_loop()
 
     @staticmethod
     async def on_ready():
@@ -73,7 +74,7 @@ class Music:
             await self.voice_client.disconnect()
         else:
             self.voice_client.play(discord.FFmpegPCMAudio(song),
-                                       after=lambda e: )
+                                       after=lambda e: self.loop.run_until_complete(self.play_next_song(self.next_song_info)))
             self.voice_client.source = discord.PCMVolumeTransformer(self.voice_client.source)
             self.voice_client.volume = self._volume
 
