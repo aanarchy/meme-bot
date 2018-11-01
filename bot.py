@@ -3,7 +3,7 @@ import os
 from discord.ext import commands
 
 bot = commands.Bot(command_prefix='!', description='I help you run errands!')
-token = os.environ.get('TOKEN')
+token = os.environ.get("TOKEN")
 
 @bot.event
 async def on_ready():
