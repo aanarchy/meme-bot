@@ -1,3 +1,4 @@
+
 """Music commands."""
 import asyncio
 import pathlib
