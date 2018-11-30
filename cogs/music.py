@@ -7,6 +7,12 @@ import discord
 from discord.ext import commands
 import youtube_dl
 
+
+def setup(bot):
+    """Sets up the cog."""
+    bot.add_cog(Music(bot))
+
+
 class Song:
     """A song object to play youtube videos from."""
 
@@ -45,12 +51,14 @@ class Song:
     def from_youtube(self, request):
         """Gets video info."""
         if request.startswith("https://"):
-            info = self.youtube.extract_info(request, download=False)
+            return self.youtube.extract_info(request, download=False)
         else:
-            info = self.youtube.extract_info("ytsearch:" + str(request), download=False)
-        entries = info.get("entries", None)
-        extracted_info = entries[0]
-        return extracted_info
+            query = "ytsearch:" + str(request)
+            info = self.youtube.extract_info(query, download=False)
+            entries = info.get("entries", None)
+            extracted_info = entries[0]
+            return extracted_info
+
 
 class Music:
     """Main music cog"""
@@ -58,7 +66,7 @@ class Music:
     def __init__(self, bot):
         self.bot = bot
         self.queue = asyncio.Queue(maxsize=50)
-        self.voice_client = None
+        self.voice = None
         self._volume = 0.5
         self.loop = asyncio.get_event_loop()
 
@@ -84,28 +92,28 @@ class Music:
     async def play_next_song(self, song=None):
         """Plays next song."""
         if song is None:
-            self.voice_client.stop()
+            self.voice.stop()
             self.clear_song_cache()
-            await self.voice_client.disconnect()
-            self.voice_client = None
+            await self.voice.disconnect()
+            self.voice = None
         else:
-            self.voice_client.play(discord.FFmpegPCMAudio(song),
-                                   after=lambda e: self.loop.run_until_complete(self.play_next_song
-                                                                                (self.next_song_info())))
-            self.voice_client.source = discord.PCMVolumeTransformer(self.voice_client.source)
-            self.voice_client.volume = self._volume
+            self.voice.play(discord.FFmpegPCMAudio(song),
+                            after=lambda e: self.loop.run_until_complete(
+                            self.play_next_song(self.next_song_info())))
+            self.voice.source = discord.PCMVolumeTransformer(self.voice.source)
+            self.voice.volume = self._volume
 
     @commands.command()
     @commands.guild_only()
     async def join(self, ctx):
         """Joins author's channel."""
         voice_state = ctx.author.voice
-        self.voice_client = ctx.guild.voice_client
+        self.voice = ctx.guild.voice_client
         if voice_state is None:
             await ctx.send("You aren't in a voice channel!")
-        elif not self.voice_client:
+        elif not self.voice:
             voice_channel = voice_state.channel
-            self.voice_client = await voice_channel.connect()
+            self.voice = await voice_channel.connect()
         else:
             await ctx.send("I'm already in a voice channel!")
 
@@ -116,27 +124,27 @@ class Music:
         song = Song()
         song.create(request)
         voice_channel = ctx.author.voice.channel
-        if self.voice_client is None or voice_channel != self.voice_client.channel:
+        if self.voice is None or voice_channel != self.voice.channel:
             await ctx.invoke(self.join)
-        if not self.voice_client.is_playing():
+        if not self.voice.is_playing():
             song.download()
             await self.play_next_song(song.filename)
-            await ctx.send("I'm playing %s for %s seconds!" % (song.title, song.duration))
+            await ctx.send("I'm playing %s for %s seconds!"
+                           % (song.title, song.duration))
         elif self.queue.full():
             await ctx.send("The queue is full! Please try again later.")
         else:
-            song = self.yt.download(request)
-            self.queue.put_nowait(song)
+            self.queue.put_nowait(song.filename)
             await ctx.send("I queued up %s!" % song.title)
 
     @commands.command()
     async def stop(self, ctx):
         """Stops the voice client."""
-        self.voice_client = ctx.guild.voice_client
-        if self.voice_client is not None:
-            if self.voice_client.is_playing():
-                self.voice_client.stop()
-            await self.voice_client.disconnect()
+        self.voice = ctx.guild.voice
+        if self.voice is not None:
+            if self.voice.is_playing():
+                self.voice.stop()
+            await self.voice.disconnect()
             del self.queue
             self.queue = asyncio.Queue(maxsize=50)
         else:
@@ -146,12 +154,12 @@ class Music:
     @commands.guild_only()
     async def pause(self, ctx):
         """Pauses the voice client."""
-        self.voice_client = ctx.guild.voice_client
-        if self.voice_client is not None:
-            if self.voice_client.is_paused():
+        self.voice = ctx.guild.voice
+        if self.voice is not None:
+            if self.voice.is_paused():
                 await ctx.send("I'm already paused!")
             else:
-                self.voice_client.pause()
+                self.voice.pause()
         else:
             await ctx.send("I'm not connected to voice!")
 
@@ -159,12 +167,12 @@ class Music:
     @commands.guild_only()
     async def resume(self, ctx):
         """Resumes the voice client."""
-        self.voice_client = ctx.guild.voice_client
-        if self.voice_client is not None:
-            if not self.voice_client.is_paused():
+        self.voice = ctx.guild.voice
+        if self.voice is not None:
+            if not self.voice.is_paused():
                 await ctx.send("I'm not paused!")
             else:
-                self.voice_client.resume()
+                self.voice.resume()
         else:
             await ctx.send("I'm not connected to voice!")
 
@@ -172,11 +180,11 @@ class Music:
     @commands.guild_only()
     async def volume(self, ctx, volume):
         """Changes voice client volume."""
-        self.voice_client = ctx.guild.voice_client
+        self.voice = ctx.guild.voice
         self._volume = volume
-        if self.voice_client:
-            self.voice_client.source = discord.PCMVolumeTransformer(self.voice_client.source)
-            self.voice_client.volume = self._volume
+        if self.voice:
+            self.voice.source = discord.PCMVolumeTransformer(self.voice.source)
+            self.voice.volume = self._volume
         else:
             await ctx.send("I'm not connected to voice!")
 
@@ -184,17 +192,13 @@ class Music:
     @commands.guild_only()
     async def skip(self, ctx):
         """Skips next song."""
-        self.voice_client = ctx.guild.voice_client
+        self.voice = ctx.guild.voice
         if self.queue.empty():
-            self.voice_client.stop()
-            await self.voice_client.disconnect()
-            self.voice_client = None
+            self.voice.stop()
+            await self.voice.disconnect()
+            self.voice = None
         else:
             source = self.queue.get_nowait()
-            self.voice_client.source = discord.FFmpegPCMAudio(source)
-            self.voice_client.source = discord.PCMVolumeTransformer(self.voice_client.source)
-            self.voice_client.volume = self._volume
-
-def setup(bot):
-    """Sets up the cog."""
-    bot.add_cog(Music(bot))
+            self.voice.source = discord.FFmpegPCMAudio(source)
+            self.voice.source = discord.PCMVolumeTransformer(self.voice.source)
+            self.voice.volume = self._volume

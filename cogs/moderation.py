@@ -2,6 +2,12 @@
 import discord
 from discord.ext import commands
 
+
+def setup(bot):
+    """Sets up the cog."""
+    bot.add_cog(Moderation(bot))
+
+
 class Moderation:
     """Commands for moderation."""
 
@@ -31,9 +37,11 @@ class Moderation:
         if channel not in channels:
             overwrites = {
                 guild.me: discord.PermissionOverwrite(send_messages=True),
-                guild.default_role: discord.PermissionOverwrite(send_messages=True)
+                guild.default_role: discord.PermissionOverwrite(
+                    send_messages=True)
             }
-            log_channel = await guild.create_text_channel(channel, overwrites=overwrites)
+            log_channel = await guild.create_text_channel(
+                            channel, overwrites=overwrites)
             return log_channel
         log_channel = discord.utils.get(channels, name=channel)
         return log_channel
@@ -49,7 +57,8 @@ class Moderation:
                 messages.append(message)
             await channel.delete_messages(messages)
         else:
-            await ctx.send("{author.name}, you do not have the permission to delete messages!")
+            await ctx.send("{author.name}, you do not have the "
+                           "permission to delete messages!")
 
     @commands.command()
     async def kick(self, ctx, user: discord.Member, reason):
@@ -61,7 +70,8 @@ class Moderation:
             log_channel = await self.check_channel_exists(ctx, "mod_log")
             await log_channel.send(embed=embed)
         else:
-            await ctx.send("{author.name}, you do not have the permission to kick that user!")
+            await ctx.send("{author.name}, you do not have the "
+                           "permission to kick that user!")
 
     @commands.command()
     async def ban(self, ctx, user: discord.Member, reason):
@@ -73,7 +83,8 @@ class Moderation:
             log_channel = await self.check_channel_exists(ctx, "mod_log")
             await log_channel.send(embed=embed)
         else:
-            await ctx.send("{author.name}, you do not have the permission to ban that user!")
+            await ctx.send("{author.name}, you do not have the "
+                           "permission to ban that user!")
 
     @commands.command()
     async def unban(self, ctx, user: discord.Member, reason):
@@ -86,7 +97,8 @@ class Moderation:
             log_channel = await self.check_channel_exists(ctx, "mod_log")
             await log_channel.send(embed=embed)
         else:
-            await ctx.send("{author.name}, you do not have the permission to unban users!")
+            await ctx.send("{author.name}, you do not have the "
+                           "permission to unban users!")
 
     @commands.command()
     async def addrole(self, ctx, user: discord.Member, role: discord.Role):
@@ -95,8 +107,8 @@ class Moderation:
         if author.guild_permissions.manage_roles and author.top_role >= role:
             await user.add_roles(role)
         else:
-            await ctx.send("{author.name}, you don't have the permission\
-            to give that role to users!")
+            await ctx.send("{author.name}, you don't have the permission"
+                           "to give that role to users!")
 
     @commands.command()
     async def removerole(self, ctx, user: discord.Member, role: discord.Role):
@@ -105,8 +117,8 @@ class Moderation:
         if author.guild_permissions.manage_roles and author.is_superset(user):
             await user.remove_roles(role)
         else:
-            await ctx.send("%s, you don't have the permission\
-            to remove roles from users!" % author.name)
+            await ctx.send("%s, you don't have the permission "
+                           "to remove roles from users!" % author.name)
 
     @commands.command()
     async def mute(self, ctx, user: discord.Member, reason):
@@ -120,13 +132,15 @@ class Moderation:
         if author.guild_permissions.manage_roles and author.is_superset(user):
             if "Muted" in user.roles:
                 await user.add_roles(muted, reason=reason)
-                embed = await self.mod_log("Mute", user.name, reason, author.name)
+                embed = await self.mod_log("Mute", user.name,
+                                           reason, author.name)
                 log_channel = await self.check_channel_exists(ctx, "mod_log")
                 await log_channel.send(embed=embed)
             else:
                 await ctx.send("%s is already muted!", user.name)
         else:
-            await ctx.send("%s, you don't have the permission to mute users!" % author.name)
+            await ctx.send("%s, you don't have the "
+                           "permission to mute users!" % author.name)
 
     @commands.command()
     async def unmute(self, ctx, user: discord.Member, reason):
@@ -137,14 +151,12 @@ class Moderation:
         if author.guild_permissions.manage_roles:
             if "Muted" in user.roles:
                 await user.remove_roles(muted, reason=reason)
-                embed = await self.mod_log("Unmute", user.name, reason, author.name)
+                embed = await self.mod_log(
+                    "Unmute", user.name, reason, author.name)
                 log_channel = await self.check_channel_exists(ctx, "mod_log")
                 await log_channel.send(embed=embed)
             else:
                 await ctx.send("%s is not muted!", user.name)
         else:
-            await ctx.send("%s, you do not have the permission to mute other users!" % author.name)
-
-def setup(bot):
-    """Sets up the cog."""
-    bot.add_cog(Moderation(bot))
+            await ctx.send("%s, you do not have the permission "
+                           "to mute other users!" % author.name)
