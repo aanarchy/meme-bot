@@ -79,11 +79,10 @@ class Music:
     @staticmethod
     def clear_song_cache():
         """Clears downloaded songs."""
-        directory = 'C:/Users/Jamie/PyCharmProjects/mom-bot'
-        songs = os.listdir(directory)
+        songs = os.listdir()
         for item in songs:
             if item.endswith(".mp3"):
-                os.remove(os.path.join(directory, item))
+                os.remove(item)
 
     def next_song_info(self):
         if self.queue.empty():
@@ -141,7 +140,7 @@ class Music:
     @commands.command()
     async def stop(self, ctx):
         """Stops the voice client."""
-        self.voice = ctx.guild.voice
+        self.voice = ctx.guild.voice_client
         if self.voice is not None:
             if self.voice.is_playing():
                 self.voice.stop()
@@ -155,7 +154,7 @@ class Music:
     @commands.guild_only()
     async def pause(self, ctx):
         """Pauses the voice client."""
-        self.voice = ctx.guild.voice
+        self.voice = ctx.guild.voice_client
         if self.voice is not None:
             if self.voice.is_paused():
                 await ctx.send("I'm already paused!")
@@ -168,7 +167,7 @@ class Music:
     @commands.guild_only()
     async def resume(self, ctx):
         """Resumes the voice client."""
-        self.voice = ctx.guild.voice
+        self.voice = ctx.guild.voice_client
         if self.voice is not None:
             if not self.voice.is_paused():
                 await ctx.send("I'm not paused!")
@@ -181,7 +180,7 @@ class Music:
     @commands.guild_only()
     async def volume(self, ctx, volume):
         """Changes voice client volume."""
-        self.voice = ctx.guild.voice
+        self.voice = ctx.guild.voice_client
         self._volume = volume
         if self.voice:
             self.voice.source = discord.PCMVolumeTransformer(self.voice.source)
@@ -193,7 +192,7 @@ class Music:
     @commands.guild_only()
     async def skip(self, ctx):
         """Skips next song."""
-        self.voice = ctx.guild.voice
+        self.voice = ctx.guild.voice_client
         if self.queue.empty():
             self.voice.stop()
             await self.voice.disconnect()

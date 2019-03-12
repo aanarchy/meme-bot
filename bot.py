@@ -1,14 +1,13 @@
 """Main bot."""
-import os
+import config
 from discord.ext import commands
 
-bot = commands.Bot(command_prefix='!', description='I help you run errands!')
-token = os.environ.get("TOKEN")
+bot = commands.Bot(command_prefix='m!', description='I help you run errands!')
 
 
 @bot.event
 async def on_ready():
-    """Prints when the bot is ready."""
+    """Print when the bot is ready."""
     print("Mom is home!")
     print('Logged in as')
     print(bot.user.id)
@@ -16,10 +15,24 @@ async def on_ready():
 
 @bot.command()
 async def ping(ctx):
-    """Sends pong in chat."""
+    """Send pong in chat."""
     await ctx.send("pong!")
-    
-extensions = ['cogs.moderation', 'cogs.music', 'cogs.debug']
+
+
+extensions = []
+
+
+if config.debug_enabled:
+    extensions.append("cogs.debug")
+
+
+if config.moderation_enabled:
+    extensions.append("cogs.moderation")
+
+
+if config.music_enabled:
+    extensions.append("cogs.music")
+
 
 for extension in extensions:
     try:
@@ -27,4 +40,4 @@ for extension in extensions:
     except Exception:
         print('Failed to load extension %s.' % extension)
 
-bot.run(token)
+bot.run(config.token)
