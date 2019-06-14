@@ -18,6 +18,7 @@ class Song:
     """A song object to play youtube videos from."""
 
     def __init__(self):
+
         self.opts = {
             'format': 'bestaudio/best',
             'postprocessors': [{
@@ -37,6 +38,7 @@ class Song:
 
     def create(self, query):
         """Creates song info."""
+
         extracted_info = self.from_youtube(query)
         self.video_id = extracted_info.get("id", None)
         self.url = extracted_info.get("webpage_url", None)
@@ -46,11 +48,13 @@ class Song:
 
     def download(self):
         """Downloads video."""
+
         if not pathlib.Path(self.filename).exists():
             self.youtube.extract_info(self.url, download=True)
 
     def from_youtube(self, request):
         """Gets video info."""
+
         if request.startswith("https://"):
             return self.youtube.extract_info(request, download=False)
         else:
@@ -65,6 +69,7 @@ class Music:
     """Main music cog"""
 
     def __init__(self, bot):
+
         self.bot = bot
         self.queue = asyncio.Queue(maxsize=50)
         self.voice = None
@@ -74,23 +79,27 @@ class Music:
     @staticmethod
     async def on_ready():
         """Prints a message when the cog is ready."""
+
         print('Music is ready!')
 
     @staticmethod
     def clear_song_cache():
         """Clears downloaded songs."""
+
         songs = os.listdir()
         for item in songs:
             if item.endswith(".mp3"):
                 os.remove(item)
 
     def next_song_info(self):
+
         if self.queue.empty():
             return None
         return self.queue.get_nowait()
 
     async def play_next_song(self, song=None):
         """Plays next song."""
+
         if song is None:
             self.voice.stop()
             self.clear_song_cache()
@@ -107,8 +116,10 @@ class Music:
     @commands.guild_only()
     async def join(self, ctx):
         """Joins author's channel."""
+
         voice_state = ctx.author.voice
         self.voice = ctx.guild.voice_client
+
         if voice_state is None:
             await ctx.send("You aren't in a voice channel!")
         elif not self.voice:
@@ -121,9 +132,11 @@ class Music:
     @commands.guild_only()
     async def play(self, ctx, request):
         """Plays a song or adds a song to queue. Searches on youtube."""
+
         song = Song()
         song.create(request)
         voice_channel = ctx.author.voice.channel
+
         if self.voice is None or voice_channel != self.voice.channel:
             await ctx.invoke(self.join)
         if not self.voice.is_playing():
@@ -140,7 +153,9 @@ class Music:
     @commands.command()
     async def stop(self, ctx):
         """Stops the voice client."""
+
         self.voice = ctx.guild.voice_client
+
         if self.voice is not None:
             if self.voice.is_playing():
                 self.voice.stop()
@@ -154,7 +169,9 @@ class Music:
     @commands.guild_only()
     async def pause(self, ctx):
         """Pauses the voice client."""
+
         self.voice = ctx.guild.voice_client
+
         if self.voice is not None:
             if self.voice.is_paused():
                 await ctx.send("I'm already paused!")
@@ -167,7 +184,9 @@ class Music:
     @commands.guild_only()
     async def resume(self, ctx):
         """Resumes the voice client."""
+
         self.voice = ctx.guild.voice_client
+
         if self.voice is not None:
             if not self.voice.is_paused():
                 await ctx.send("I'm not paused!")
@@ -180,8 +199,10 @@ class Music:
     @commands.guild_only()
     async def volume(self, ctx, volume):
         """Changes voice client volume."""
+
         self.voice = ctx.guild.voice_client
         self._volume = volume
+
         if self.voice:
             self.voice.source = discord.PCMVolumeTransformer(self.voice.source)
             self.voice.volume = self._volume
@@ -192,7 +213,9 @@ class Music:
     @commands.guild_only()
     async def skip(self, ctx):
         """Skips next song."""
+
         self.voice = ctx.guild.voice_client
+        
         if self.queue.empty():
             self.voice.stop()
             await self.voice.disconnect()
