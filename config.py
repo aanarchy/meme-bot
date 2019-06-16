@@ -1,4 +1,4 @@
-"""Change the line in quotation marks to your own bot token."""
+"""You can set the environment variable below as your own token."""
 import os
 
 token = os.environ.get('DISCORD_TOKEN')
