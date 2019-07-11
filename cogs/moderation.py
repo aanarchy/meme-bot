@@ -139,10 +139,7 @@ class Moderation:
             muted = discord.utils.get(guild.roles, name="Muted")
         if author.guild_permissions.manage_roles and author.is_superset(user):
             if "Muted" in user.roles:
-                await user.add_roles(muted, reason=reason)
-                embed = await self.mod_log("Mute", user.name,
-                                           reason, author.name)
-                log_channel = await self.check_channel_exists(ctx, config.log_channel)
+                await ctx.send("%s is already muted!", user.name)
                 if log_channel is None:
                     await ctx.send("Mod logging channel does not exist! Either create "
                                    "a channel named 'mod-log' "
@@ -150,7 +147,10 @@ class Moderation:
                 else:
                     await log_channel.send(embed=embed)
             else:
-                await ctx.send("%s is already muted!", user.name)
+                await user.add_roles(muted, reason=reason)
+                embed = await self.mod_log("Mute", user.name,
+                                           reason, author.name)
+                log_channel = await self.check_channel_exists(ctx, config.log_channel)
         else:
             await ctx.send("%s, you don't have the "
                            "permission to mute users!" % author.name)
