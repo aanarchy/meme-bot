@@ -42,7 +42,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     async def clear(self, ctx, amount=100):
-        """Clear the specified amount of messages. Syntax: m!clear <amount>"""
+        """Clear the specified amount of messages. Args: <amount>"""
         channel = ctx.message.channel
         author = ctx.author
         messages = []
@@ -57,13 +57,14 @@ class Moderation(commands.Cog):
 
     @commands.command()
     async def kick(self, ctx, user: discord.Member, reason="None Specified"):
-        """Kicks the specified user. Syntax: m!kick <user> <reason>"""
+        """Kicks the specified user. Args: m!kick <user> <reason>"""
         author = ctx.author
 
         if author.guild_permissions.kick_members and author.is_superset(user):
             await user.kick(reason=reason)
             embed = await self.mod_log("Kick", user.name, reason, author.name)
-            log_channel = await self.check_channel_exists(ctx, config.log_channel)
+            log_channel = await self.check_channel_exists(
+                ctx, config.log_channel)
             if log_channel is None:
                 await ctx.send("Mod logging channel does not exist! "
                                "Either create "
@@ -78,7 +79,7 @@ class Moderation(commands.Cog):
     @commands.command()
     async def ban(self, ctx, user: discord.Member,
                   reason="None Specified", tempban=False):
-        """Bans the specified user. Syntax: m!ban <user> <reason>"""
+        """Bans the specified user. Args: <user> <reason>"""
         author = ctx.author
 
         if tempban:
@@ -104,8 +105,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     async def tempban(self, ctx, user: discord.Member, seconds, reason):
-        """Temporarily bans a specfic user.
-        <m!tempban <user> <seconds> <reason>"""
+        """Tempbans a specfic user. Args: <user> <seconds> <reason>"""
         ctx.invoke(self.ban, user, reason, tempban=True)
         unban_timer = threading.Timer(int(seconds),
                                       ctx.invoke(
@@ -115,7 +115,7 @@ class Moderation(commands.Cog):
     @commands.command()
     async def unban(self, ctx, user: discord.Member,
                     reason="None Specified", tempban=False):
-        """Unbans the specified user."""
+        """Unbans the specified user. Args: <user> <reason>"""
         author = ctx.author
         guild = ctx.guild
         if author.guild_permissions.ban_members:
@@ -138,7 +138,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     async def addrole(self, ctx, user: discord.Member, role: discord.Role):
-        """Give the specified user a role."""
+        """Give the specified user a role. Args: <user> <role>"""
         author = ctx.author
 
         if author.guild_permissions.manage_roles and author.top_role >= role:
@@ -149,7 +149,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     async def removerole(self, ctx, user: discord.Member, role: discord.Role):
-        """Remove a role from the specified user."""
+        """Remove a role from the specified user. Args: <user> <role>"""
         author = ctx.author
 
         if author.guild_permissions.manage_roles and author.is_superset(user):
@@ -160,7 +160,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     async def mute(self, ctx, user: discord.Member, reason="None Specified"):
-        """Mute the specified user."""
+        """Mute the specified user. Args: <user> <reason>"""
         author = ctx.author
         guild = ctx.guild
         muted = discord.utils.get(guild.roles, name="Muted")
@@ -168,27 +168,28 @@ class Moderation(commands.Cog):
         if muted is None:
             await guild.create_role(name="Muted")
             muted = discord.utils.get(guild.roles, name="Muted")
+            log_channel = await self.check_channel_exists(
+                ctx, config.log_channel)
+
         if author.guild_permissions.manage_roles and author.is_superset(user):
             if "Muted" in user.roles:
-                await user.add_roles(muted, reason=reason)
-                embed = await self.mod_log("Mute", user.name,
-                                           reason, author.name)
-                log_channel = await self.check_channel_exists(ctx, config.log_channel)
+                await ctx.send("%s is already muted!", user.name)
                 if log_channel is None:
                     await ctx.send("Mod logging channel does not exist! Either create "
                                    "a channel named 'mod-log' "
                                    "or change the config file.")
                 else:
+                    await user.add_roles(muted, reason=reason)
+                    embed = await self.mod_log("Mute", user.name,
+                                               reason, author.name)
                     await log_channel.send(embed=embed)
-            else:
-                await ctx.send("%s is already muted!", user.name)
         else:
             await ctx.send("%s, you don't have the "
                            "permission to mute users!" % author.name)
 
     @commands.command()
     async def unmute(self, ctx, user: discord.Member, reason="None Specified"):
-        """Unmute the specified user."""
+        """Unmute the specified user. Args: <user> <reason>"""
         author = ctx.author
         guild = ctx.guild
         muted = discord.utils.get(guild.roles, name="Muted")

@@ -130,7 +130,7 @@ class Music(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def play(self, ctx, request):
-        """Plays a song or adds a song to queue. Searches on youtube."""
+        """Plays or adds a song to queue. Args: <keyword/url>"""
 
         song = Song()
         song.create(request)
@@ -197,7 +197,7 @@ class Music(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def volume(self, ctx, volume):
-        """Changes voice client volume."""
+        """Changes voice client volume. Args: <0.0-1.0>"""
 
         self.voice = ctx.guild.voice_client
         self._volume = volume
@@ -211,7 +211,7 @@ class Music(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def skip(self, ctx):
-        """Skips next song."""
+        """Skips to the next song."""
 
         self.voice = ctx.guild.voice_client
 
