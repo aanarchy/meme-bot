@@ -1,4 +1,3 @@
-
 """Music commands."""
 import asyncio
 import pathlib
@@ -65,7 +64,7 @@ class Song:
             return extracted_info
 
 
-class Music:
+class Music(commands.Cog):
     """Main music cog"""
 
     def __init__(self, bot):
@@ -215,7 +214,7 @@ class Music:
         """Skips next song."""
 
         self.voice = ctx.guild.voice_client
-        
+
         if self.queue.empty():
             self.voice.stop()
             await self.voice.disconnect()

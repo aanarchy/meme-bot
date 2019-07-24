@@ -10,7 +10,7 @@ def setup(bot):
     bot.add_cog(Moderation(bot))
 
 
-class Moderation:
+class Moderation(commands.Cog):
     """Commands for moderation."""
 
     def __init__(self, bot):
@@ -42,7 +42,7 @@ class Moderation:
 
     @commands.command()
     async def clear(self, ctx, amount=100):
-        """Clear the specified amount of messages."""
+        """Clear the specified amount of messages. Syntax: m!clear <amount>"""
         channel = ctx.message.channel
         author = ctx.author
         messages = []
@@ -57,7 +57,7 @@ class Moderation:
 
     @commands.command()
     async def kick(self, ctx, user: discord.Member, reason="None Specified"):
-        """Kicks the specified user."""
+        """Kicks the specified user. Syntax: m!kick <user> <reason>"""
         author = ctx.author
 
         if author.guild_permissions.kick_members and author.is_superset(user):
@@ -65,7 +65,8 @@ class Moderation:
             embed = await self.mod_log("Kick", user.name, reason, author.name)
             log_channel = await self.check_channel_exists(ctx, config.log_channel)
             if log_channel is None:
-                await ctx.send("Mod logging channel does not exist! Either create "
+                await ctx.send("Mod logging channel does not exist! "
+                               "Either create "
                                "a channel named 'mod-log' "
                                "or change the config file.")
             else:
@@ -75,8 +76,9 @@ class Moderation:
                            "permission to kick that user!")
 
     @commands.command()
-    async def ban(self, ctx, user: discord.Member, reason="None Specified", tempban=False):
-        """Bans the specified user."""
+    async def ban(self, ctx, user: discord.Member,
+                  reason="None Specified", tempban=False):
+        """Bans the specified user. Syntax: m!ban <user> <reason>"""
         author = ctx.author
 
         if tempban:
@@ -90,7 +92,8 @@ class Moderation:
             log_channel = await self.check_channel_exists(ctx, config.log_channel)
             if tempban:
                 if log_channel is None:
-                    await ctx.send("Mod logging channel does not exist! Either create "
+                    await ctx.send("Mod logging channel does not exist! "
+                                   "Either create "
                                    "a channel named 'mod-log' "
                                    "or change the config file.")
                 else:
@@ -101,24 +104,30 @@ class Moderation:
 
     @commands.command()
     async def tempban(self, ctx, user: discord.Member, seconds, reason):
-        """Temporarily bans a specfic user."""
+        """Temporarily bans a specfic user.
+        <m!tempban <user> <seconds> <reason>"""
         ctx.invoke(self.ban, user, reason, tempban=True)
         unban_timer = threading.Timer(int(seconds),
-                                      ctx.invoke(self.unban, user, reason, tempban=True))
+                                      ctx.invoke(
+                                      self.unban, user, reason, tempban=True))
         unban_timer.start()
 
     @commands.command()
-    async def unban(self, ctx, user: discord.Member, reason="None Specified", tempban=False):
+    async def unban(self, ctx, user: discord.Member,
+                    reason="None Specified", tempban=False):
         """Unbans the specified user."""
         author = ctx.author
         guild = ctx.guild
         if author.guild_permissions.ban_members:
             await guild.unban(user, reason=reason)
             if not tempban:
-                embed = await self.mod_log("Unban", user.name, reason, author.name)
-                log_channel = await self.check_channel_exists(ctx, config.log_channel)
+                embed = await self.mod_log(
+                    "Unban", user.name, reason, author.name)
+                log_channel = await self.check_channel_exists(
+                    ctx, config.log_channel)
                 if log_channel is None:
-                    await ctx.send("Mod logging channel does not exist! Either create "
+                    await ctx.send("Mod logging channel does not exist! "
+                                   "Either create "
                                    "a channel named 'mod-log' "
                                    "or change the config file.")
                 else:

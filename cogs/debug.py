@@ -7,7 +7,7 @@ def setup(bot):
     bot.add_cog(Debug(bot))
 
 
-class Debug:
+class Debug(commands.Cog):
     """Debug class."""
 
     @staticmethod

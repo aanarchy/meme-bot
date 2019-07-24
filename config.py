@@ -1,5 +1,7 @@
+import os
+
 """Change the line in quotation marks to your own bot token."""
-token = "NDYwOTk4MDg5Mzk5MDc0ODE2.XQNTFg.PRFi9m5EALXsKTK6jhO10cYboQw"
+token = os.environ.get('DISCORD_TOKEN')
 music_enabled = True
 debug_enabled = True
 moderation_enabled = True
