@@ -119,13 +119,18 @@ class Music(commands.Cog):
         voice_state = ctx.author.voice
         self.voice = ctx.guild.voice_client
 
-        if voice_state is None:
-            await ctx.send("You aren't in a voice channel!")
-        elif not self.voice:
-            voice_channel = voice_state.channel
-            self.voice = await voice_channel.connect()
-        else:
-            await ctx.send("I'm already in a voice channel!")
+        try:
+            if voice_state is None:
+                await ctx.send("You aren't in a voice channel!")
+            elif not self.voice:
+                voice_channel = voice_state.channel
+                self.voice = await voice_channel.connect()
+            else:
+                await ctx.send("I'm already in a voice channel!")
+        except discord.Forbidden:
+            await ctx.send(":no_entry_sign: I don't "
+                           "have the permission "
+                           "to connect to that channel!")
 
     @commands.command()
     @commands.guild_only()
