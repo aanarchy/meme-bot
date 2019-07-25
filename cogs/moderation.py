@@ -23,12 +23,14 @@ class Moderation(commands.Cog):
         print("Moderation is ready!")
 
     @staticmethod
-    async def mod_log(log_type, user, reason, moderator):
+    async def mod_log(log_type, user, reason, moderator, duration=None):
         """Mod logging."""
         embed = discord.Embed()
         embed.add_field(name="Type:", value=log_type, inline=True)
         embed.add_field(name="User:", value=user, inline=True)
         embed.add_field(name="Reason:", value=reason, inline=False)
+        if duration:
+            embed.add_field(name="Duration:", value=duration, inline=False)
         embed.set_footer(text=moderator)
         return embed
 
@@ -52,89 +54,108 @@ class Moderation(commands.Cog):
                 messages.append(message)
             await channel.delete_messages(messages)
         else:
-            await ctx.send("{author.name}, you do not have the "
-                           "permission to delete messages!")
+            await ctx.send(":no_entry_sign: {}, you don't have the permission "
+                           "to delete messages!".format(author.name))
 
     @commands.command()
     async def kick(self, ctx, user: discord.Member, reason="None Specified"):
         """Kicks the specified user. Args: m!kick <user> <reason>"""
         author = ctx.author
 
-        if author.guild_permissions.kick_members and author.is_superset(user):
+        if author.guild_permissions.kick_members and \
+                author.guild_permissions.is_strict_superset(
+                user.guild_permissions):
             await user.kick(reason=reason)
             embed = await self.mod_log("Kick", user.name, reason, author.name)
-            log_channel = await self.check_channel_exists(
+            log_channel = self.check_channel_exists(
                 ctx, config.log_channel)
             if log_channel is None:
-                await ctx.send("Mod logging channel does not exist! "
+                await ctx.send(":no_entry_sign: Mod logging channel "
+                               "does not exist! "
                                "Either create "
                                "a channel named 'mod-log' "
                                "or change the config file.")
             else:
                 await log_channel.send(embed=embed)
         else:
-            await ctx.send("{author.name}, you do not have the "
-                           "permission to kick that user!")
+            await ctx.send("{}, you do not have the "
+                           "permission to kick that user!".format(author.name))
 
     @commands.command()
     async def ban(self, ctx, user: discord.Member,
-                  reason="None Specified", tempban=False):
+                  reason="None Specified", temp=False, duration=None):
         """Bans the specified user. Args: <user> <reason>"""
         author = ctx.author
 
-        if tempban:
-            log_type = "Tempban"
+        if temp:
+            log_type = "Temp ban"
         else:
             log_type = "Ban"
 
-        if author.guild_permissions.ban_members and author.is_superset(user):
+        if author.guild_permissions.ban_members and \
+                author.guild_permissions.is_strict_superset(
+                user.guild_permissions):
             await user.ban(reason=reason)
-            embed = await self.mod_log(log_type, user.name, reason, author.name)
-            log_channel = await self.check_channel_exists(ctx, config.log_channel)
-            if tempban:
-                if log_channel is None:
-                    await ctx.send("Mod logging channel does not exist! "
-                                   "Either create "
-                                   "a channel named 'mod-log' "
-                                   "or change the config file.")
-                else:
-                    await log_channel.send(embed=embed)
+            if temp:
+                embed = await self.mod_log(
+                    log_type, user.name, reason, author.name)
+            else:
+                embed = await self.mod_log(log_type, user.name, reason,
+                                           author.name, duration=duration)
+            log_channel = self.check_channel_exists(
+                ctx, config.log_channel)
+            if log_channel is None:
+                await ctx.send(":no_entry_sign: Mod logging channel "
+                               "does not exist! "
+                               "Either create "
+                               "a channel named 'mod-log' "
+                               "or change the config file.")
+            else:
+                await log_channel.send(embed=embed)
         else:
-            await ctx.send("{author.name}, you do not have the "
-                           "permission to ban that user!")
+            await ctx.send("{}, you do not have the "
+                           "permission to ban that user!".format(author.name))
 
     @commands.command()
     async def tempban(self, ctx, user: discord.Member, seconds, reason):
         """Tempbans a specfic user. Args: <user> <seconds> <reason>"""
-        ctx.invoke(self.ban, user, reason, tempban=True)
-        unban_timer = threading.Timer(int(seconds),
-                                      ctx.invoke(
-                                      self.unban, user, reason, tempban=True))
+        await ctx.invoke(self.ban, user, reason, temp=True, duration=seconds)
+        unban_timer = threading.Timer(float(seconds),
+                                      await ctx.invoke(
+                                      self.unban, user, reason, temp=True))
         unban_timer.start()
 
     @commands.command()
-    async def unban(self, ctx, user: discord.Member,
-                    reason="None Specified", tempban=False):
+    async def unban(self, ctx, user: discord.User,
+                    reason="None Specified", temp=False):
         """Unbans the specified user. Args: <user> <reason>"""
         author = ctx.author
         guild = ctx.guild
-        if author.guild_permissions.ban_members:
-            await guild.unban(user, reason=reason)
-            if not tempban:
-                embed = await self.mod_log(
-                    "Unban", user.name, reason, author.name)
-                log_channel = await self.check_channel_exists(
-                    ctx, config.log_channel)
-                if log_channel is None:
-                    await ctx.send("Mod logging channel does not exist! "
-                                   "Either create "
-                                   "a channel named 'mod-log' "
-                                   "or change the config file.")
-                else:
-                    await log_channel.send(embed=embed)
-        else:
-            await ctx.send("{author.name}, you do not have the "
-                           "permission to unban users!")
+        try:
+            banned = await guild.fetch_ban(user)
+            if author.guild_permissions.ban_members:
+                if banned:
+                    await guild.unban(user, reason=reason)
+                    if not temp:
+                        embed = await self.mod_log(
+                            "Unban", user.name, reason, author.name)
+                        log_channel = self.check_channel_exists(
+                            ctx, config.log_channel)
+                        if log_channel is None:
+                            await ctx.send(":no_entry_sign: Mod logging "
+                                           "channel does not exist! "
+                                           "Either create "
+                                           "a channel named 'mod-log' "
+                                           "or change the config file.")
+                        else:
+                            await log_channel.send(embed=embed)
+            else:
+                await ctx.send(":no_entry_sign: {}, you do not have the "
+                               "permission to unban users!".format(
+                                author.name))
+        except discord.NotFound:
+            await ctx.send(':no_entry_sign: User does not exist or '
+                           'is not banned.')
 
     @commands.command()
     async def addrole(self, ctx, user: discord.Member, role: discord.Role):
@@ -144,70 +165,97 @@ class Moderation(commands.Cog):
         if author.guild_permissions.manage_roles and author.top_role >= role:
             await user.add_roles(role)
         else:
-            await ctx.send("{author.name}, you don't have the permission"
-                           "to give that role to users!")
+            await ctx.send(":no_entry_sign: {}, "
+                           "you don't have the permission"
+                           "to give that role to users!".format(author.name))
 
     @commands.command()
     async def removerole(self, ctx, user: discord.Member, role: discord.Role):
         """Remove a role from the specified user. Args: <user> <role>"""
         author = ctx.author
 
-        if author.guild_permissions.manage_roles and author.is_superset(user):
+        if author.guild_permissions.manage_roles and \
+                author.guild_permissions.is_strict_superset(
+                user.guild_permissions):
             await user.remove_roles(role)
         else:
-            await ctx.send("%s, you don't have the permission "
-                           "to remove roles from users!" % author.name)
+            await ctx.send(":no_entry_sign: {}, you don't "
+                           "have the permission "
+                           "to remove roles from users!".format(author.name))
 
     @commands.command()
-    async def mute(self, ctx, user: discord.Member, reason="None Specified"):
+    async def mute(self, ctx, user: discord.Member,
+                   reason="None Specified", temp=False, duration=None):
         """Mute the specified user. Args: <user> <reason>"""
         author = ctx.author
         guild = ctx.guild
         muted = discord.utils.get(guild.roles, name="Muted")
+        log_channel = self.check_channel_exists(
+            ctx, config.log_channel)
 
         if muted is None:
-            await guild.create_role(name="Muted")
-            muted = discord.utils.get(guild.roles, name="Muted")
-            log_channel = await self.check_channel_exists(
-                ctx, config.log_channel)
+            await guild.create_role(name='Muted')
 
-        if author.guild_permissions.manage_roles and author.is_superset(user):
-            if "Muted" in user.roles:
-                await ctx.send("%s is already muted!", user.name)
-                if log_channel is None:
-                    await ctx.send("Mod logging channel does not exist! Either create "
-                                   "a channel named 'mod-log' "
-                                   "or change the config file.")
+        if author.guild_permissions.manage_roles and \
+                author.guild_permissions.is_strict_superset(
+                    user.guild_permissions):
+            if muted in user.roles:
+                await ctx.send(":no_entry_sign: {} "
+                               "is already muted!".format(user.name))
+            elif log_channel:
+                await user.add_roles(muted, reason=reason)
+                if temp:
+                    embed = await self.mod_log("Temp mute", user.name,
+                                               reason, author.name,
+                                               duration=duration)
                 else:
-                    await user.add_roles(muted, reason=reason)
                     embed = await self.mod_log("Mute", user.name,
                                                reason, author.name)
-                    await log_channel.send(embed=embed)
+                await log_channel.send(embed=embed)
+            else:
+                await ctx.send(":no_entry_sign: Mod logging channel "
+                               "does not exist! "
+                               "Either create "
+                               "a channel named 'mod-log' "
+                               "or change the config file.")
         else:
-            await ctx.send("%s, you don't have the "
-                           "permission to mute users!" % author.name)
+            await ctx.send("{}, you don't have the "
+                           "permission to mute users!".format(author.name))
 
     @commands.command()
-    async def unmute(self, ctx, user: discord.Member, reason="None Specified"):
+    async def tempmute(self, ctx, user: discord.Member, seconds, reason):
+        """Tempbans a specfic user. Args: <user> <seconds> <reason>"""
+        await ctx.invoke(self.mute, user, reason, temp=True, duration=seconds)
+        unmute_timer = threading.Timer(
+            15.0, await ctx.invoke(self.unmute, user, temp=True))
+        unmute_timer.start()
+
+    @commands.command()
+    async def unmute(self, ctx, user: discord.Member,
+                     reason="None Specified", temp=False):
         """Unmute the specified user. Args: <user> <reason>"""
         author = ctx.author
         guild = ctx.guild
         muted = discord.utils.get(guild.roles, name="Muted")
-
         if author.guild_permissions.manage_roles:
-            if "Muted" in user.roles:
+            if muted in user.roles:
                 await user.remove_roles(muted, reason=reason)
-                embed = await self.mod_log(
-                    "Unmute", user.name, reason, author.name)
-                log_channel = await self.check_channel_exists(ctx, config.log_channel)
-                if log_channel is None:
-                    await ctx.send("Mod logging channel does not exist! Either create "
-                                   "a channel named 'mod-log' "
-                                   "or change the config file.")
-                else:
-                    await log_channel.send(embed=embed)
+                if not temp:
+                    embed = await self.mod_log(
+                        "Unmute", user.name, reason, author.name)
+                    log_channel = self.check_channel_exists(
+                        ctx, config.log_channel)
+                    if log_channel is None:
+                        await ctx.send(":no_entry_sign: Mod logging channel "
+                                       "does not exist! "
+                                       "Either create "
+                                       "a channel named 'mod-log' "
+                                       "or change the config file.")
+                    else:
+                        await log_channel.send(embed=embed)
             else:
-                await ctx.send("%s is not muted!", user.name)
+                await ctx.send(":no_entry_sign: {} "
+                               "is not muted!".format(user.name))
         else:
-            await ctx.send("%s, you do not have the permission "
-                           "to mute other users!" % author.name)
+            await ctx.send(":no_entry_sign: %s, you do not have the "
+                           "permission to mute other users!" % author.name)

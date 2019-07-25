@@ -129,10 +129,13 @@ class Music(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def play(self, ctx, request):
-        """Plays or adds a song to queue. Args: <keyword/url>"""
+    async def play(self, ctx, *keywords):
+        """Plays or adds a song to queue. Args: <search terms/url>"""
 
         song = Song()
+        request = ""
+        for kw in keywords:
+            request = request + " " + kw
         song.create(request)
         voice_channel = ctx.author.voice.channel
 
