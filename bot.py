@@ -1,14 +1,14 @@
-"""Main bot."""
 import config
 from discord.ext import commands
 
-bot = commands.Bot(command_prefix='m!', description='Morgz is my fav channel')
+bot = commands.Bot(command_prefix=config.prefix,
+                   description='Morgz is my fav channel')
 
 
 @bot.event
 async def on_ready():
     """Print when the bot is ready."""
-    print("*Surprised Pikachu Face*")
+    print("*Waffles*")
     print('Logged in as')
     print(bot.user.id)
 
@@ -34,10 +34,15 @@ if config.music_enabled:
     extensions.append('cogs.music')
 
 
+if config.error_enabled:
+    extensions.append('cogs.errors')
+
+
 for extension in extensions:
     try:
         bot.load_extension(extension)
     except Exception:
         print('Failed to load extension {}.'.format(extension))
+
 
 bot.run(config.token)
