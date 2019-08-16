@@ -41,8 +41,8 @@ if config.error_enabled:
 for extension in extensions:
     try:
         bot.load_extension(extension)
-    except Exception:
-        print('Failed to load extension {}.'.format(extension))
+    except Exception as e:
+        print('Failed to load extension {} because of error {}.'.format(extension, e))
 
 
 bot.run(config.token)

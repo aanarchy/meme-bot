@@ -147,7 +147,7 @@ class Music(commands.Cog):
                             discord.FFmpegPCMAudio(song.filename),
                             volume=self._volume),
                             after=lambda e: self.voice.loop.run_until_complete(
-                            self.play_next_song(self.next_song_info().filename)
+                            self.play_next_song(self.next_song_info())
                             ))
             self.current_song = song
 
@@ -182,6 +182,7 @@ class Music(commands.Cog):
 
         if not self.current_song:
             song.download()
+            self.voice = ctx.guild.voice_client
             await self.play_next_song(song)
             await ctx.send(embed=song.embed(author))
         elif self.queue.full():

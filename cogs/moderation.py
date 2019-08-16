@@ -244,7 +244,7 @@ class Moderation(commands.Cog):
         else:
             await log_channel.send(embed=embed)
 
-    @commands.command(name=["mute"], aliases=["m"])
+    @commands.command(name="mute", aliases=["m"])
     @commands.guild_only()
     @log_channel_exists()
     async def mute(self, ctx, user: discord.Member,
