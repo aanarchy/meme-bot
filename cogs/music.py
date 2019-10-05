@@ -88,17 +88,46 @@ class Song:
         return embed
 
 
+class MusicPlayer:
+    """Music player to seperate different guild's playlists"""
+
+    def __init__(self, ctx):
+        self.bot = ctx.bot
+        self.queue = asyncio.Queue(maxsize=50)
+        self.voice = ctx.guild.voice_client
+        self._volume = 0.05
+        self.current_song = None
+        self.loop_enabled = False
+
+    def next_song_info(self):
+
+        if self.queue.empty():
+            return None
+        return self.queue.get_nowait()
+
+    async def play_next_song(self, song=None):
+        """Plays next song."""
+        if song is None:
+            self.voice.stop()
+            await self.voice.disconnect()
+            self.voice = None
+        else:
+            self.voice.play(discord.PCMVolumeTransformer(
+                            discord.FFmpegPCMAudio(song.filename),
+                            volume=self._volume),
+                            after=lambda e: self.voice.loop.run_until_complete(
+                            self.play_next_song(self.next_song_info())
+                            ))
+            self.current_song = song
+
+
 class Music(commands.Cog):
     """Main music cog"""
 
     def __init__(self, bot):
 
         self.bot = bot
-        self.queue = asyncio.Queue(maxsize=50)
-        self.voice = None
-        self._volume = 0.05
-        self.current_song = None
-        self.loop_enabled = False
+        self.player = MusicPlayer(bot)
 
     def is_dj():
         """Check if a specifed channel exists."""
@@ -129,27 +158,6 @@ class Music(commands.Cog):
         for item in songs:
             if item.endswith(".mp3"):
                 os.remove(item)
-
-    def next_song_info(self):
-
-        if self.queue.empty():
-            return None
-        return self.queue.get_nowait()
-
-    async def play_next_song(self, song=None):
-        """Plays next song."""
-        if song is None:
-            self.voice.stop()
-            await self.voice.disconnect()
-            self.voice = None
-        else:
-            self.voice.play(discord.PCMVolumeTransformer(
-                            discord.FFmpegPCMAudio(song.filename),
-                            volume=self._volume),
-                            after=lambda e: self.voice.loop.run_until_complete(
-                            self.play_next_song(self.next_song_info())
-                            ))
-            self.current_song = song
 
     @commands.command(name="join", aliases=['connect'])
     @commands.guild_only()
