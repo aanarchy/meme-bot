@@ -143,8 +143,8 @@ class Moderation(commands.Cog):
     @commands.command(name="tempban")
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
-    async def tempban(self, ctx, user: discord.User, w=0, d=0, h=0, m=0, s=0, *words):
-        duration = timedelta(weeks=w, days=d, hours=h, minutes=m, seconds=s)
+    async def tempban(self, ctx, user: discord.User, w=0, d=0, h=0, m=0, *words):
+        duration = timedelta(weeks=w, days=d, hours=h, minutes=m)
         await ctx.invoke(self.ban, user, reason, duration=duration)
         await asyncio.sleep(duration)
         await ctx.invoke(self.unban, user, "Tempban")
