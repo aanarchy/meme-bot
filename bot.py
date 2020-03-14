@@ -42,7 +42,8 @@ for extension in extensions:
     try:
         bot.load_extension(extension)
     except Exception as e:
-        print('Failed to load extension {} because of error {}.'.format(extension, e))
+        print('Failed to load extension {} because of error {}.'.format(
+              extension, e))
 
 
 bot.run(config.token)

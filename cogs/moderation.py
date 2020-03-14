@@ -60,8 +60,10 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     async def clear(self, ctx, amount=1):
-        """Clear the specified amount of messages.
- Args: <amount> <optional:user>"""
+        """
+        Clear the specified amount of messages.
+        Syntax: clear <amount> <optional:user>
+        """
         channel = ctx.message.channel
         messages = []
         async for message in channel.history(limit=int(amount)):
@@ -72,17 +74,16 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(kick_members=True)
     async def kick(self, ctx, user: discord.Member, *, reason):
-        """Kicks the specified user. Args: m!kick <user> <reason>"""
+        """
+        Kicks the specified user.
+        Syntax: kick <user> <reason>
+        """
         author = ctx.author
         guild = ctx.guild
         channels = guild.text_channels
         reason = "None specified"
         if not author.top_role > user.top_role:
             raise commands.MissingPermissions("Is superset")
-        if words:
-            reason = ""
-            for w in words:
-                reason = reason + " " + w
         await user.kick(reason=reason)
         embed = await self.mod_log(
                 ctx.message.id, ctx.message.created_at,
@@ -94,7 +95,10 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, user: discord.Member, *, reason):
-        """Bans the specified user. Args: <user> <reason>"""
+        """
+        Bans the specified user. 
+        Syntax: ban <user> <reason>
+        """
         author = ctx.author
         reason = "None specified"
         channels = ctx.guild.text_channels
@@ -118,7 +122,10 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     async def unban(self, ctx, user: discord.User, *, reason):
-        """Unbans the specified user. args: <user> <reason>"""
+        """
+        Unbans the specified user. 
+        Syntax: unban <user> <reason>
+        """
         author = ctx.author
         guild = ctx.guild
         reason = "None specified"
@@ -143,17 +150,22 @@ class Moderation(commands.Cog):
     @commands.command(name="tempban")
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
-    async def tempban(self, ctx, user: discord.User, w=0, d=0, h=0, m=0, *words):
-        duration = timedelta(weeks=w, days=d, hours=h, minutes=m)
-        await ctx.invoke(self.ban, user, reason, duration=duration)
+    async def tempban(self, ctx, user: discord.User,
+                      d=0, h=0, m=0, *, reason):
+        duration = timedelta(days=d, hours=h, minutes=m)
+        await ctx.invoke(self.ban, user, reason)
         await asyncio.sleep(duration)
         await ctx.invoke(self.unban, user, "Tempban")
 
     @commands.command(name="addrole")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
-    async def addrole(self, ctx, user: discord.Member, role: discord.role, *, reason):
-        """Give the specified user a role. args: <user> <role>"""
+    async def addrole(self, ctx, user: discord.Member,
+                      role: discord.role, *, reason):
+        """
+        Give the specified user a role.
+        Syntax: addrole <user> <role>
+        """
         author = ctx.author
         reason = "None specified"
         channels = ctx.guild.text_channels
@@ -176,8 +188,12 @@ class Moderation(commands.Cog):
     @commands.command(name="removerole")
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
-    async def removerole(self, ctx, user: discord.Member, role: discord.role, *, reason):
-        """Remove a role from the specified user. args: <user> <role>"""
+    async def removerole(self, ctx, user: discord.Member,
+                         role: discord.role, *, reason):
+        """
+        Remove a role from the specified user.
+        Syntax: removerole <user> <role>
+        """
         author = ctx.author
         reason = "None specified"
         channels = ctx.guild.text_channels
@@ -200,7 +216,10 @@ class Moderation(commands.Cog):
     @commands.command(name="mute", aliases=["m"])
     @commands.guild_only()
     async def mute(self, ctx, user: discord.Member, *, reason):
-        """Mute the specified user. args: <user> <reason>"""
+        """
+        Mute the specified user. 
+        Syntax: mute <user> <reason>
+        """
         author = ctx.author
         guild = ctx.guild
         channels = ctx.guild.text_channels
@@ -234,7 +253,10 @@ class Moderation(commands.Cog):
     @commands.command(name="unmute")
     @commands.guild_only()
     async def unmute(self, ctx, user: discord.Member, *, reason):
-        """Unmute the specified user. Args: <user> <reason>"""
+        """
+        Unmute the specified user.
+        Syntax: unmute <user> <reason>
+        """
         author = ctx.author
         guild = ctx.guild
         channels = guild.text_channels
@@ -264,7 +286,7 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     async def tempmute(self, ctx, user: discord.Member, duration, *, reason):
         duration = timedelta(weeks=int(w), days=int(d), hours=int(h), minutes=int(m), seconds=int(s))
-        muted = await ctx.invoke(self.mute, user, reason, duration=duration)
+        muted = await ctx.invoke(self.mute, user, reason)
         if not muted:
             await asyncio.sleep(duration.total_seconds())
             await ctx.invoke(self.unmute, user, "Tempmute")
