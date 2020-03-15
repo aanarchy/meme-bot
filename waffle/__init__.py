@@ -1,4 +1,4 @@
-import config
+from waffle import config
 from discord.ext import commands
 
 bot = commands.Bot(command_prefix=config.prefix,

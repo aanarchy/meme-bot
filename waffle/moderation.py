@@ -2,11 +2,10 @@
 import discord
 from discord.ext import commands
 import asyncio
-from datetime import timedelta
 import humanize
 import config
 
-from waffle.scheduler import string_to_seconds
+from waffle.scheduler import string_to_seconds, set_task
 
 
 def setup(bot):
