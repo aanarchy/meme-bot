@@ -289,6 +289,5 @@ class Moderation(commands.Cog):
     async def tempmute(self, ctx, user: discord.Member, duration, *, reason):
         seconds = string_to_seconds(duration)
         muted = await ctx.invoke(self.mute, user, reason)
-        if not muted:
-            await asyncio.sleep(seconds)
-            await ctx.invoke(self.unmute, user, "Tempmute")
+        await async.sleep(string_to_seconds(seconds))
+        await ctx.invoke(self.unmute, user, "Tempmute")
