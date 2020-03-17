@@ -1,4 +1,4 @@
-from waffle import config
+import config
 from discord.ext import commands
 
 bot = commands.Bot(command_prefix=config.prefix,
@@ -19,26 +19,7 @@ async def ping(ctx):
     await ctx.send("pong!")
 
 
-extensions = []
-
-
-if config.debug_enabled:
-    extensions.append('cogs.debug')
-
-
-if config.moderation_enabled:
-    extensions.append('cogs.moderation')
-
-
-if config.music_enabled:
-    extensions.append('cogs.music')
-
-
-if config.error_enabled:
-    extensions.append('cogs.errors')
-
-
-for extension in extensions:
+for extension in config.config["extensions"]:
     try:
         bot.load_extension(extension)
     except Exception as e:
