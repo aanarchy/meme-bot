@@ -136,8 +136,8 @@ class Moderation(commands.Cog):
         if banned:
             await guild.unban(user, reason=reason)
             embed = await self.mod_log(
-                        ctx.message.id, ctx.message.created_at,
-                        "Unban", user, reason, author)
+                ctx.message.id, ctx.message.created_at,
+                "Unban", user, reason, author)
             log_channel = discord.utils.get(
                 channels, name=config.log_channel)
             if log_channel is None:
@@ -175,8 +175,8 @@ class Moderation(commands.Cog):
             raise commands.missingpermissions("is superset")
         await user.add_roles(role)
         embed = await self.mod_log(
-                ctx.message.id, ctx.message.created_at,
-                "Add role", user, reason, author)
+            ctx.message.id, ctx.message.created_at,
+            "Add role", user, reason, author)
         log_channel = discord.utils.get(channels, name=config.log_channel)
         if log_channel is None:
             await ctx.send(":no_entry_sign: mod logging "
@@ -289,5 +289,5 @@ class Moderation(commands.Cog):
     async def tempmute(self, ctx, user: discord.Member, duration, *, reason):
         seconds = string_to_seconds(duration)
         muted = await ctx.invoke(self.mute, user, reason)
-        await async.sleep(string_to_seconds(seconds))
+        await asyncio.sleep(string_to_seconds(seconds))
         await ctx.invoke(self.unmute, user, "Tempmute")
