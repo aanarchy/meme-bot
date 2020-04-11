@@ -1,7 +1,7 @@
 '''Change the line in quotation marks to your own bot token.'''
 
 config = {
-    'token': 'NDYwOTk4MDg5Mzk5MDc0ODE2.Xm91PQ.Sy7X6SGwrvvaKwKW0G1D7G96yUM',
+    'token': '',
     'prefix': 'waf ',
     'extensions': ['music', 'debug', 'moderation', 'errors'],
     'autorole': 'Member',

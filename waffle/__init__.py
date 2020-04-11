@@ -21,7 +21,7 @@ async def ping(ctx):
 
 for extension in Config["extensions"]:
     try:
-        bot.load_extension(extension)
+        bot.load_extension(f"waffle.{extension}")
     except Exception as e:
         print('Failed to load extension {} because of error {}.'.format(
               extension, e))
