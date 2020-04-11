@@ -10,6 +10,7 @@ python = "^3.8"
 youtube-dl = "^2020.3.8"
 humanizer = "^0.1.0"
 redis = "^3.4.1"
+humanize = "^2.3.0"
 
 [tool.poetry.dev-dependencies]
 

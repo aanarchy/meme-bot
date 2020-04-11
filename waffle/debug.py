@@ -29,19 +29,19 @@ class Debug(commands.Cog):
     @commands.is_owner()
     async def reload(self, ctx, cog):
         """Log out of the bot user."""
-        await self.bot.reload_extension(f'cogs.{cog}')
+        self.bot.reload_extension(f'waffle.{cog}')
         await ctx.send(f"{cog} has been reloaded.")
 
     @commands.command()
     @commands.is_owner()
     async def unload(self, ctx, cog):
         """Log out of the bot user."""
-        await self.bot.unload_extension(f'cogs.{cog}')
+        self.bot.unload_extension(f'waffle.{cog}')
         await ctx.send(f"{cog} has been unloaded.")
 
     @commands.command()
     @commands.is_owner()
     async def load(self, ctx, cog):
         """Log out of the bot user."""
-        await self.bot.load_extension(f'cogs.{cog}')
+        self.bot.load_extension(f'waffle.{cog}')
         await ctx.send(f"{cog} has been loaded.")

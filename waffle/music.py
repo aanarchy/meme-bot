@@ -7,7 +7,7 @@ from datetime import timedelta
 import discord
 from discord.ext import commands
 import youtube_dl
-import config
+from config import Config
 
 
 def setup(bot):
@@ -18,7 +18,7 @@ def setup(bot):
 class Song:
     """A song object to play youtube videos from."""
 
-    def __init__(self):
+    def __init__(self, ctx):
 
         self.opts = {
             'format': 'bestaudio/best',
@@ -39,6 +39,7 @@ class Song:
         self.position = None
         self.thumbnail = "https://youtube.com/"
         self.channel = None
+        self.requested_by = ctx.author
 
     def create(self, query):
         """Creates song info."""
@@ -89,15 +90,16 @@ class Song:
 
 
 class GuildMusicState:
-    """Class to store music states to seperate different guild's playlists"""
+    """Class to store music states to separate different guild's playlists"""
 
     def __init__(self, ctx, loop):
         self.bot = ctx.bot
         self.queue = asyncio.Queue(maxsize=50)
         self.voice = ctx.guild.voice_client
-        self._volume = 0.05
+        self.volume = 0.05
         self.current_song = None
         self.loop = loop
+        self.repeat = False
 
     def next_song_info(self):
 
@@ -114,10 +116,10 @@ class GuildMusicState:
         else:
             self.voice.play(discord.PCMVolumeTransformer(
                             discord.FFmpegPCMAudio(song.filename),
-                            volume=self._volume),
-                            after=lambda e: self.voice.loop.run_until_complete(
-                            self.play_next_song(self.next_song_info())
-                            ))
+                            volume=self.volume),
+                            after=lambda e: self.loop.create_task(
+                                self.play_next_song(self.next_song_info())
+            ))
             self.current_song = song
 
 
@@ -132,10 +134,10 @@ class Music(commands.Cog):
     def is_dj():
         """Check if a specifed channel exists."""
         async def predicate(ctx):
-            if config.dj:
+            if Config['dj']:
                 author = ctx.author
                 converter = commands.RoleConverter()
-                dj_role = await converter.convert(ctx, config.dj)
+                dj_role = await converter.convert(ctx, Config['dj'])
                 if dj_role in author.roles:
                     return True
                 else:
@@ -144,7 +146,7 @@ class Music(commands.Cog):
                 return True
         return commands.check(predicate)
 
-    async def __before_invoke(self, ctx):
+    async def cog_before_invoke(self, ctx):
         ctx.music_state = self.states.setdefault(ctx.guild.id, GuildMusicState(
                                                  ctx, self.bot.loop))
 
@@ -156,7 +158,6 @@ class Music(commands.Cog):
     @staticmethod
     def clear_song_cache():
         """Clears downloaded songs."""
-
         songs = os.listdir()
         for item in songs:
             if item.endswith(".mp3"):
@@ -167,15 +168,13 @@ class Music(commands.Cog):
     async def join(self, ctx, channel=None):
         """Joins author's channel."""
         if not channel and not ctx.author.voice:
-            ctx.send(f":no_entry_sign: {ctx.author.mention}, you have not "
-                     "specified a channel nor are connected to one.")
+            await ctx.send(f":no_entry_sign: {ctx.author.mention}, you "
+                           "have not specified a channel "
+                           " nor are connected to one.")
         else:
             voice_channel = discord.utils.find(
                 lambda m: m.name == channel, ctx.guild.voice_channels)
-        if not self.states[ctx.guild.id]:
-            self.voice = await voice_channel.connect()
-        else:
-            self.states[ctx.guild.id]
+            ctx.music_state = await voice_channel.connect()
 
     @commands.command(name="play", aliases=["p"])
     @commands.guild_only()
@@ -183,27 +182,34 @@ class Music(commands.Cog):
     async def play(self, ctx, *keywords):
         """Plays or adds a song to queue. Args: <search terms/url>"""
         author = ctx.author
-        song = Song()
+        song = Song(ctx)
         request = ""
+        music_state = ctx.music_state
         for kw in keywords:
             request = request + " " + kw
         song.create(request)
+
+        if not author.voice:
+            await ctx.send(f":no_entry_sign: {ctx.author.mention}, you are "
+                           "not connected to any voice channel.")
+            return
+
         voice_channel = author.voice.channel
+        if not music_state.voice \
+                or voice_channel != music_state.voice.channel:
+            music_state.voice = await voice_channel.connect()
 
-        if self.voice is None or voice_channel != self.voice.channel:
-            await voice_channel.connect()
-
-        if not self.current_song:
+        if not music_state.current_song:
             song.download()
-            self.voice = ctx.guild.voice_client
-            await self.play_next_song(song)
+            music_state.voice = ctx.guild.voice_client
+            await music_state.play_next_song(song)
             await ctx.send(embed=song.embed(author))
-        elif self.queue.full():
+        elif music_state.queue.full():
             await ctx.send(":no_entry_sign: "
                            "The queue is full! Please try again later.")
         else:
-            self.queue.put_nowait(song)
-            song.position = self.queue.qsize() + 1
+            music_state.queue.put_nowait(song)
+            song.position = music_state.queue.qsize() + 1
             song.download()
             await ctx.send(embed=song.embed(author))
 
@@ -212,15 +218,14 @@ class Music(commands.Cog):
     @is_dj()
     async def stop(self, ctx):
         """Stops the voice client."""
+        music_state = ctx.music_state
 
-        self.voice = ctx.guild.voice_client
-
-        if self.voice is not None:
-            if self.voice.is_playing():
-                self.voice.stop()
-            await self.voice.disconnect()
-            del self.queue
-            self.queue = asyncio.Queue(maxsize=50)
+        if music_state.voice is not None:
+            if music_state.voice.is_playing():
+                music_state.voice.stop()
+            await music_state.voice.disconnect()
+            del music_state.queue
+            music_state.queue = asyncio.Queue(maxsize=50)
             await ctx.send(":octagonal_sign: Stopped!")
         else:
             await ctx.send(":no_entry_sign: I'm not connected to voice!")
@@ -230,14 +235,13 @@ class Music(commands.Cog):
     @is_dj()
     async def pause(self, ctx):
         """Pauses the voice client."""
+        music_state = ctx.music_state
 
-        self.voice = ctx.guild.voice_client
-
-        if self.voice is not None:
-            if self.voice.is_paused():
-                await ctx.send(":no_entry_sign: I'm already paused!")
+        if music_state.voice is not None:
+            if music_state.voice.is_paused():
+                await music_state.send(":no_entry_sign: I'm already paused!")
             else:
-                self.voice.pause()
+                music_state.voice.pause()
         else:
             await ctx.send(":no_entry_sign: I'm not connected to voice!")
 
@@ -246,14 +250,13 @@ class Music(commands.Cog):
     @is_dj()
     async def resume(self, ctx):
         """Resumes the voice client."""
+        music_state = ctx.music_state
 
-        self.voice = ctx.guild.voice_client
-
-        if self.voice is not None:
-            if not self.voice.is_paused():
+        if music_state.voice is not None:
+            if not music_state.voice.is_paused():
                 await ctx.send(":no_entry_sign: I'm not paused!")
             else:
-                self.voice.resume()
+                music_state.voice.resume()
         else:
             await ctx.send(":no_entry_sign: I'm not connected to voice!")
 
@@ -265,14 +268,13 @@ class Music(commands.Cog):
         if volume >= 0.1:
             await ctx.send(":no_entry_sign: Volume over 0.1 is prohibited.")
         else:
-            guild = ctx.guild
-            self.voice = guild.voice_client
-            self._volume = volume
+            music_state = ctx.music_state
+            music_state.volume = volume
 
-            if self.voice:
-                self.voice.source.volume = self._volume
+            if music_state.voice:
+                music_state.voice.source.volume = music_state.volume
                 await ctx.send(
-                    f":loud_sound: Changed volume to {self._volume}")
+                    f":loud_sound: Changed volume to {music_state.volume}")
             else:
                 await ctx.send(":no_entry_sign: I'm not connected to voice!")
 
@@ -281,13 +283,32 @@ class Music(commands.Cog):
     @is_dj()
     async def skip(self, ctx):
         """Skips to the next song."""
-
-        self.voice = ctx.guild.voice_client
-        self.voice.stop()
+        ctx.music_state.voice.stop()
         await ctx.send(":track_next: Skipped!")
 
-    @commands.command(name="loop", aliases=["l"])
+    @commands.command(name="repeat", aliases=["loop"])
     @commands.guild_only()
     @is_dj()
-    async def loop(self, ctx):
-        self.loop_enabled = True
+    async def repeat(self, ctx):
+        ctx.music_state.repeat = True
+
+    @commands.command(name="queue", aliases=["q"])
+    @commands.guild_only()
+    async def queue(self, ctx):
+        music_state = ctx.music_state
+        if music_state.queue.qsize() == 0:
+            await ctx.send(":no_entry_sign: Queue is empty!")
+            return
+        song = music_state.current_song
+        embed = discord.Embed(title=f'Queue for {ctx.guild}',
+                              colour=discord.Colour(0xf8e71c))
+        embed.add_field(name="Now Playing:", value=f"[{song.title}]"
+                        "({song.url})```{song.duration} | Requested by "
+                        "{song.requested_by.mention}```")
+        embed.add_field(name=":arrow_down: Up next :arrow_down:", value="")
+        for song in music_state.queue:
+            embed.add_field(name=f"{song.position}. [{song.title}]"
+                            "({song.url})```{song.duration} | Requested by "
+                            "{song.requested_by.mention}```", value="")
+            return embed
+        pass

@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands
 import asyncio
 import humanize
-import config
+from config import Config
 
 from waffle.scheduler import string_to_seconds, set_task
 
@@ -48,14 +48,14 @@ class Moderation(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(member):
         """Auto role."""
-        if config.welcome_channel:
+        if Config['welcome_channel']:
             channel = discord.utils.find(
-                lambda m: m.name == config.welcome_channel,
+                lambda m: m.name == Config['welcome_channel'],
                 member.guild.channels)
             await channel.send(f"Welcome {member.mention}!")
-        if config.autorole:
+        if Config['autorole']:
             default_role = discord.utils.find(
-                lambda m: m.name == config.autorole, member.guild.roles)
+                lambda m: m.name == Config['autorole'], member.guild.roles)
             await member.add_roles(default_role)
 
     @commands.command(name="clear", aliases=["c"])
@@ -88,9 +88,9 @@ class Moderation(commands.Cog):
             raise commands.MissingPermissions("Is superset")
         await user.kick(reason=reason)
         embed = await self.mod_log(
-                ctx.message.id, ctx.message.created_at,
-                "Kick", user, reason, author)
-        log_channel = discord.utils.get(channels, name=config.log_channel)
+            ctx.message.id, ctx.message.created_at,
+            "Kick", user, reason, author)
+        log_channel = discord.utils.get(channels, name=Config['log_channel'])
         await log_channel.send(embed=embed)
 
     @commands.command(name="ban", aliases=["b"])
@@ -108,9 +108,9 @@ class Moderation(commands.Cog):
             raise commands.MissingPermissions("Is superset")
         await user.ban(reason=reason)
         embed = await self.mod_log(
-                      ctx.message.id, ctx.message.created_at,
-                      "Ban", user, reason, author)
-        log_channel = discord.utils.get(channels, name=config.log_channel)
+            ctx.message.id, ctx.message.created_at,
+            "Ban", user, reason, author)
+        log_channel = discord.utils.get(channels, name=Config['log_channel'])
         if log_channel is None:
             await ctx.send(":no_entry_sign: Mod logging channel "
                            "does not exist! "
@@ -139,7 +139,7 @@ class Moderation(commands.Cog):
                 ctx.message.id, ctx.message.created_at,
                 "Unban", user, reason, author)
             log_channel = discord.utils.get(
-                channels, name=config.log_channel)
+                channels, name=Config['log_channel'])
             if log_channel is None:
                 await ctx.send(":no_entry_sign: mod logging channel "
                                "does not exist! "
@@ -177,7 +177,7 @@ class Moderation(commands.Cog):
         embed = await self.mod_log(
             ctx.message.id, ctx.message.created_at,
             "Add role", user, reason, author)
-        log_channel = discord.utils.get(channels, name=config.log_channel)
+        log_channel = discord.utils.get(channels, name=Config['log_channel'])
         if log_channel is None:
             await ctx.send(":no_entry_sign: mod logging "
                            "channel does not exist! "
@@ -203,9 +203,9 @@ class Moderation(commands.Cog):
             raise commands.missingpermissions("is superset")
         await user.remove_roles(role)
         embed = await self.mod_log(
-                ctx.message.id, ctx.message.created_at,
-                "Remove role", user, reason, author)
-        log_channel = discord.utils.get(channels, name=config.log_channel)
+            ctx.message.id, ctx.message.created_at,
+            "Remove role", user, reason, author)
+        log_channel = discord.utils.get(channels, name=Config['log_channel'])
         if log_channel is None:
             await ctx.send(":no_entry_sign: mod logging "
                            "channel does not exist! "
@@ -225,10 +225,10 @@ class Moderation(commands.Cog):
         author = ctx.author
         guild = ctx.guild
         channels = ctx.guild.text_channels
-        mute_role = discord.utils.get(guild.roles, name=config.mute)
-        log_channel = discord.utils.get(channels, name=config.log_channel)
-        if mute_role is None and config.mute:
-            await guild.create_role(name=config.mute)
+        mute_role = discord.utils.get(guild.roles, name=Config['mute'])
+        log_channel = discord.utils.get(channels, name=Config['log_channel'])
+        if mute_role is None and Config['mute']:
+            await guild.create_role(name=Config['mute'])
 
         if author.top_role > user.top_role and mute_role:
             if mute_role in user.roles:
@@ -238,8 +238,8 @@ class Moderation(commands.Cog):
             elif log_channel:
                 await user.add_roles(mute_role, reason=reason)
                 embed = await self.mod_log(
-                        ctx.message.id, ctx.message.created_at,
-                        "Mute", user, reason, author)
+                    ctx.message.id, ctx.message.created_at,
+                    "Mute", user, reason, author)
                 await log_channel.send(embed=embed)
             else:
                 await ctx.send(":no_entry_sign: mod logging "
@@ -247,7 +247,7 @@ class Moderation(commands.Cog):
                                "either create "
                                "a channel named 'mod-log' "
                                "or change the config file.")
-        elif not config.mute:
+        elif not Config['mute']:
             ctx.send(":no_entry_sign: Muting is disabled!")
         else:
             raise commands.MissingPermissions("Is superset")
@@ -262,14 +262,14 @@ class Moderation(commands.Cog):
         author = ctx.author
         guild = ctx.guild
         channels = guild.text_channels
-        muted = discord.utils.get(guild.roles, name=config.mute)
-        log_channel = discord.utils.get(channels, name=config.log_channel)
+        muted = discord.utils.get(guild.roles, name=Config['mute'])
+        log_channel = discord.utils.get(channels, name=Config['log_channel'])
         if author.top_role > user.top_role:
             if muted in user.roles:
                 await user.remove_roles(muted, reason=reason)
                 embed = await self.mod_log(
-                        ctx.message.id, ctx.message.created_at,
-                        "Unmute", user, reason, author)
+                    ctx.message.id, ctx.message.created_at,
+                    "Unmute", user, reason, author)
                 if log_channel is None:
                     await ctx.send(":no_entry_sign: Mod logging "
                                    "channel does not exist! "

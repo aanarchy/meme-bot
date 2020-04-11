@@ -1,7 +1,7 @@
-import config
+from config import Config
 from discord.ext import commands
 
-bot = commands.Bot(command_prefix=config.prefix,
+bot = commands.Bot(command_prefix=Config['prefix'],
                    description='Morgz is my fav channel')
 
 
@@ -19,7 +19,7 @@ async def ping(ctx):
     await ctx.send("pong!")
 
 
-for extension in config.config["extensions"]:
+for extension in Config["extensions"]:
     try:
         bot.load_extension(extension)
     except Exception as e:
@@ -27,4 +27,4 @@ for extension in config.config["extensions"]:
               extension, e))
 
 
-bot.run(config.token)
+bot.run(Config['token'])
