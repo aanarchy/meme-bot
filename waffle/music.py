@@ -201,7 +201,6 @@ class Music(commands.Cog):
 
         if not music_state.current_song:
             song.download()
-            music_state.voice = ctx.guild.voice_client
             await music_state.play_next_song(song)
             await ctx.send(embed=song.embed(author))
         elif music_state.queue.full():
@@ -296,7 +295,8 @@ class Music(commands.Cog):
     @commands.guild_only()
     async def queue(self, ctx):
         music_state = ctx.music_state
-        if music_state.queue.qsize() == 0:
+        queue = music_state.queue
+        if queue.qsize() == 0:
             await ctx.send(":no_entry_sign: Queue is empty!")
             return
         song = music_state.current_song
@@ -306,9 +306,16 @@ class Music(commands.Cog):
                         "({song.url})```{song.duration} | Requested by "
                         "{song.requested_by.mention}```")
         embed.add_field(name=":arrow_down: Up next :arrow_down:", value="")
-        for song in music_state.queue:
+        songs = []
+        for i in range(0, queue.qsize()):
+            try:
+                if i == queue.qsize():
+                    break
+                songs.append(queue.get_nowait())
+            except asyncio.Queue.Empty:
+                break
+        for song in songs:
             embed.add_field(name=f"{song.position}. [{song.title}]"
                             "({song.url})```{song.duration} | Requested by "
                             "{song.requested_by.mention}```", value="")
-            return embed
-        pass
+        await ctx.send(embed=embed)
