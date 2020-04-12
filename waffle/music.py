@@ -62,7 +62,10 @@ class Song:
         """Downloads video."""
 
         if not pathlib.Path(self.filename).exists():
-            self.youtube.extract_info(self.url, download=True)
+            try:
+                self.youtube.extract_info(self.url, download=True)
+            except youtube_dl.utils.DownloadError:
+                return False
 
     def from_youtube(self, request):
         """Gets video info."""
@@ -102,10 +105,10 @@ class GuildMusicState:
         self.repeat = False
 
     def next_song_info(self):
-
-        if self.queue.empty():
+        try:
+            self.queue.get_nowait()
+        except youtube_dl.utils.DownloadError:
             return None
-        return self.queue.get_nowait()
 
     async def play_next_song(self, song=None):
         """Plays next song."""
@@ -179,15 +182,16 @@ class Music(commands.Cog):
     @commands.command(name="play", aliases=["p"])
     @commands.guild_only()
     @is_dj()
-    async def play(self, ctx, *keywords):
+    async def play(self, ctx, *, request):
         """Plays or adds a song to queue. Args: <search terms/url>"""
         author = ctx.author
         song = Song(ctx)
-        request = ""
         music_state = ctx.music_state
-        for kw in keywords:
-            request = request + " " + kw
         song.create(request)
+
+        if len(request) == 0:
+            await ctx.send(f":no_entry_sign: please enter a song.")
+            return
 
         if not author.voice:
             await ctx.send(f":no_entry_sign: {ctx.author.mention}, you are "
@@ -200,7 +204,8 @@ class Music(commands.Cog):
             music_state.voice = await voice_channel.connect()
 
         if not music_state.current_song:
-            song.download()
+            if not song.download():
+                await ctx.send(":no_entry_sign: Song not found!")
             await music_state.play_next_song(song)
             await ctx.send(embed=song.embed(author))
         elif music_state.queue.full():
@@ -209,8 +214,10 @@ class Music(commands.Cog):
         else:
             music_state.queue.put_nowait(song)
             song.position = music_state.queue.qsize() + 1
-            song.download()
-            await ctx.send(embed=song.embed(author))
+            if not song.download():
+                await ctx.send(":no_entry_sign: Song not found!")
+            else:
+                await ctx.send(embed=song.embed(author))
 
     @commands.command(name="stop", aliases=["disconnect"])
     @commands.guild_only()
@@ -223,8 +230,8 @@ class Music(commands.Cog):
             if music_state.voice.is_playing():
                 music_state.voice.stop()
             await music_state.voice.disconnect()
-            del music_state.queue
-            music_state.queue = asyncio.Queue(maxsize=50)
+            while music_state.queue.qsize() > 0:
+                music_state.
             await ctx.send(":octagonal_sign: Stopped!")
         else:
             await ctx.send(":no_entry_sign: I'm not connected to voice!")
@@ -307,7 +314,7 @@ class Music(commands.Cog):
                               f"({song.url}) {song.duration} | Requested by "
                               f"{song.requested_by.mention}\n\n\n"
                               f":arrow_down: Up next :arrow_down:")
-        songs = tuple(queue.queue)
+        songs = tuple(queue._queue)
         for song in songs:
             embed.add_field(name=f"{song.position}. [{song.title}]"
                             f"({song.url})", value=f"{song.duration} "
