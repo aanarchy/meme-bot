@@ -1,6 +1,6 @@
 '''Change the line in quotation marks to your own bot token.'''
 
-config = {
+Config = {
     'token': '',
     'prefix': 'waf ',
     'extensions': ['music', 'debug', 'moderation', 'errors'],

@@ -296,26 +296,21 @@ class Music(commands.Cog):
     async def queue(self, ctx):
         music_state = ctx.music_state
         queue = music_state.queue
-        if queue.qsize() == 0:
+        if queue.qsize() < 1 and not music_state.current_song:
             await ctx.send(":no_entry_sign: Queue is empty!")
             return
         song = music_state.current_song
         embed = discord.Embed(title=f'Queue for {ctx.guild}',
-                              colour=discord.Colour(0xf8e71c))
-        embed.add_field(name="Now Playing:", value=f"[{song.title}]"
-                        "({song.url})```{song.duration} | Requested by "
-                        "{song.requested_by.mention}```")
-        embed.add_field(name=":arrow_down: Up next :arrow_down:", value="")
-        songs = []
-        for i in range(0, queue.qsize()):
-            try:
-                if i == queue.qsize():
-                    break
-                songs.append(queue.get_nowait())
-            except asyncio.Queue.Empty:
-                break
+                              colour=discord.Colour(0xf8e71c),
+                              description=f":play_pause: Now Playing:\n "
+                              f"[{song.title}]"
+                              f"({song.url}) {song.duration} | Requested by "
+                              f"{song.requested_by.mention}\n\n\n"
+                              f":arrow_down: Up next :arrow_down:")
+        songs = tuple(queue.queue)
         for song in songs:
             embed.add_field(name=f"{song.position}. [{song.title}]"
-                            "({song.url})```{song.duration} | Requested by "
-                            "{song.requested_by.mention}```", value="")
+                            f"({song.url})", value=f"{song.duration} "
+                            f"| Requested by {song.requested_by.mention}",
+                            inline=False)
         await ctx.send(embed=embed)

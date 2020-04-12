@@ -124,8 +124,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# mp3 files
+# media files
 *.mp3
+*.webm
 
 # Project files
 config.py
