@@ -7,7 +7,7 @@ from datetime import timedelta
 import discord
 from discord.ext import commands
 import youtube_dl
-from config import Config
+from waffle.config import Config
 
 
 def setup(bot):
