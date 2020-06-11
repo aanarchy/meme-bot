@@ -1,8 +1,0 @@
-{
-    "python.jediEnabled": false,
-    "python.venvPath": "~/Library/Caches/pypoetry/virtualenvs",
-    "python.venvFolders": [
-        "\"/Users/faith/Library/Caches/pypoetry/virtualenvs\""
-    ],
-    "python.pythonPath": "/Users/faith/Library/Caches/pypoetry/virtualenvs/waffle-bot-uYdOEjIV-py3.8/bin/python"
-}
