@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+*/__pycache__
 *.py[cod]
 *$py.class
 
@@ -123,5 +124,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-#mp3
+# media files
 *.mp3
+*.webm
+
+# Project files
+config.toml
