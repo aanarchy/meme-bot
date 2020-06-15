@@ -7,8 +7,9 @@ from collections import deque
 import discord
 from discord.ext import commands
 import youtube_dl
-from waffle.config import Config
+from waffle.config import CONFIG
 
+CONFIG = CONFIG['config']
 
 def setup(bot):
     """Sets up the cog."""
@@ -89,7 +90,7 @@ class GuildMusicState:
     def __init__(self, ctx, loop):
         self.bot = ctx.bot
         self.queue = deque()
-        self.queue_capacity = Config['queue_capacity']
+        self.queue_capacity = CONFIG['queue_capacity']
         self.voice = ctx.guild.voice_client
         self.volume = 0.1
         self.current_song = None
@@ -139,10 +140,10 @@ class Music(commands.Cog):
     def is_dj():
         """Check if a specifed channel exists."""
         async def predicate(ctx):
-            if Config['dj']:
+            if 'dj' in CONFIG:
                 author = ctx.author
                 converter = commands.RoleConverter()
-                dj_role = await converter.convert(ctx, Config['dj'])
+                dj_role = await converter.convert(ctx, CONFIG['dj'])
                 if dj_role in author.roles:
                     return True
                 else:

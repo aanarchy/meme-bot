@@ -1,0 +1,17 @@
+title = "waffle-bot example configuration"
+
+[bot]
+token = ''   # Change the line in quotation marks to your own bot token.
+prefix = 'waf '
+extensions = ['music', 'debug', 'moderation', 'errors']
+
+[config]
+autorole = 'Member'   # Set this to None if you do not want autorole
+#dj = 'DJ'
+log_channel = 'mod-log'
+#welcome_channel = 'welcome-leave'
+mute = 'Edgelord'   # Set this to None if you want to disable muting
+    
+[database]
+check_interval = 3600   # Period of time in between checking for tasks 
+#database_uri = 'mongodb://'''

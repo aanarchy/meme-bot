@@ -1,22 +1,19 @@
 import os
 from pymongo import MongoClient
-from waffle.config import CONFIG
+from waffle.config import Config
 
-CONFIG = CONFIG['database']
-
-db = MongoClient(CONFIG['uri'])
+db = MongoClient(Config['database_uri'])
 
 
 def get_collection(collection_name):
     return getattr(db, collection_name)
 
 
-def add(collection_name, items):
-    collection = get_collection(collection_name)
+def add(items):
     if isinstance(items, list):
-        collection.insert_many(items)
+        db.insert_many(items)
     else:
-        collection.insert_one(items)
+        db.insert_one(items)
 
 
 def remove(collection_name, key, value, single=False):
