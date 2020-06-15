@@ -1,0 +1,17 @@
+title = "waffle-bot example configuration"
+
+[bot]
+token = 'NDYwOTk4MDg5Mzk5MDc0ODE2.XubV6Q.LX1Fl2TzhW62f4nyvAZLHn__-1I'   # Change the line in quotation marks to your own bot token.
+prefix = 'waf '
+extensions = ['music', 'debug', 'moderation', 'errors']
+
+[config]
+autorole = 'Member'   # Set this to None if you do not want autorole
+#dj = 'DJ'
+log_channel = 'mod-log'
+#welcome_channel = 'welcome-leave'
+mute = 'Edgelord'   # Set this to None if you want to disable muting
+    
+[database]
+check_interval = 60   # Period of time in between checking for tasks 
+uri = 'mongodb://heroku_ssdlqxt0:6hiv6jj8oo8p9ght8nvotqjv4k@ds147566.mlab.com:47566/heroku_ssdlqxt0'
