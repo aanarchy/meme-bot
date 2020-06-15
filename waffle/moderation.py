@@ -1,11 +1,12 @@
 """Moderation commands."""
+import asyncio
+
 import discord
 from discord.ext import commands
-import asyncio
 import humanize
-from config import Config
 
-from waffle.scheduler import string_to_seconds, set_task
+from config import Config
+from waffle.scheduler import string_to_seconds
 
 
 def setup(bot):
@@ -27,7 +28,7 @@ class Moderation(commands.Cog):
 
     @staticmethod
     async def mod_log(
-            id, time, log_type, user, reason, moderator, duration=None):
+            message_id, time, log_type, user, reason, moderator, duration=None):
         """Mod logging."""
         embed = discord.Embed(title=f'{log_type} for user {user.id}',
                               colour=discord.Colour(0xf8e71c),
@@ -41,7 +42,7 @@ class Moderation(commands.Cog):
         if duration:
             embed.add_field(name="Duration:", value=humanize.naturaldelta(
                 duration), inline=True)
-        embed.set_footer(text=f'ID: {id}')
+        embed.set_footer(text=f'ID: {message_id}')
         return embed
 
     @staticmethod
@@ -88,8 +89,8 @@ class Moderation(commands.Cog):
             raise commands.MissingPermissions("Is superset")
         await user.kick(reason=reason)
         embed = await self.mod_log(
-            ctx.message.id, ctx.message.created_at,
-            "Kick", user, reason, author)
+                ctx.message.id, ctx.message.created_at,
+                "Kick", user, reason, author)
         log_channel = discord.utils.get(channels, name=Config['log_channel'])
         await log_channel.send(embed=embed)
 
@@ -234,7 +235,6 @@ class Moderation(commands.Cog):
             if mute_role in user.roles:
                 await ctx.send(f":no_entry_sign: {user.mention} "
                                "is already muted!")
-                return True
             elif log_channel:
                 await user.add_roles(mute_role, reason=reason)
                 embed = await self.mod_log(
@@ -288,6 +288,6 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     async def tempmute(self, ctx, user: discord.Member, duration, *, reason):
         seconds = string_to_seconds(duration)
-        muted = await ctx.invoke(self.mute, user, reason)
-        await asyncio.sleep(string_to_seconds(seconds))
+        await ctx.invoke(self.mute, user, reason)
+        await asyncio.sleep(seconds)
         await ctx.invoke(self.unmute, user, "Tempmute")

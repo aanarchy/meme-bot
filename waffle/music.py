@@ -1,4 +1,5 @@
 """Music commands."""
+import asyncio
 import pathlib
 import os
 from datetime import timedelta
@@ -45,7 +46,7 @@ class Song:
             self.uploader = extracted_info.get("uploader", None)
             self.channel_url = extracted_info.get("channel_url", None)
             self.artist = extracted_info.get("artist", None)
-            self.position = 1
+            self.position = len(ctx.music_state.queue) + 1
             self.requested_by = ctx.author
             if not pathlib.Path(self.filename).exists():
                 try:
@@ -66,11 +67,11 @@ class Song:
         extracted_info = entries[0]
         return extracted_info
 
-    def embed(self, author):
+    def embed(self, author, action):
         embed = discord.Embed(title=self.title, url=self.url,
                               colour=discord.Colour(0xff0000))
         embed.set_image(url=self.thumbnail)
-        embed.set_author(name=f"{author.name} added to queue",
+        embed.set_author(name=f"{author.name} {action}",
                          icon_url=author.avatar_url)
         embed.add_field(name="Uploader", value=self.uploader,
                         inline=True)
@@ -88,18 +89,22 @@ class GuildMusicState:
 
     def __init__(self, ctx, loop):
         self.bot = ctx.bot
+        self.ctx = ctx
         self.queue = deque()
         self.queue_capacity = Config['queue_capacity']
         self.voice = ctx.guild.voice_client
         self.volume = 0.1
         self.current_song = None
         self.loop = loop
-        self.repeat = False
-        self.loop_playlist = None
+        self.mode = None
 
     def next_song_info(self):
-        if self.repeat:
+        if self.mode == "repeat":
             return self.current_song
+        elif self.mode == "loop":
+            song = self.queue.popleft()
+            self.add_to_queue(song)
+            return song
         elif self.queue:
             return self.queue.popleft()
         elif not self.queue:
@@ -108,24 +113,37 @@ class GuildMusicState:
     async def play_next_song(self, song):
         """Plays next song."""
         if not song:
-            if self.loop_playlist:
-                self.queue = self.loop_playlist
-                song = self.next_song_info()
-            else:
-                self.voice.stop()
+            self.current_song = None
+            await asyncio.sleep(10)
+            if not self.voice.is_playing() and not self.voice.is_paused():
                 await self.voice.disconnect()
-                self.voice = None
-                self.queue.clear()
-                self.current_song = None
-                return
+                await self.ctx.send("Disconnected due to timeout.")
+                self.cleanup()
+            return
 
+        for i, song in enumerate(self.queue):
+            self.queue[i].position = i + 1
+
+        self.current_song = song
         self.voice.play(discord.PCMVolumeTransformer(
                         discord.FFmpegPCMAudio(song.filename),
                         volume=self.volume),
                         after=lambda e: self.loop.create_task(
                         self.play_next_song(self.next_song_info())
                         ))
-        self.current_song = song
+
+    def cleanup(self):
+        self.mode = None
+        self.queue.clear()
+        self.current_song = None
+        self.voice = None
+
+    def add_to_queue(self, song):
+        if self.current_song:
+            song.position = len(self.queue) + 1
+        else:
+            song.position = "Now playing"
+        self.queue.append(song)
 
 
 class Music(commands.Cog):
@@ -196,16 +214,16 @@ class Music(commands.Cog):
             await ctx.send(":no_entry_sign: Song not found!")
             return
 
-        if not music_state.current_song:
-            await music_state.play_next_song(song)
-            await ctx.send(embed=song.embed(author))
+        if not music_state.voice.is_playing():
+            music_state.add_to_queue(song)
+            await music_state.play_next_song(music_state.next_song_info())
+            await ctx.send(embed=song.embed(author, "added to queue"))
         elif len(music_state.queue) >= music_state.queue_capacity:
             await ctx.send(":no_entry_sign: "
                            "The queue is full! Please try again later.")
         else:
-            music_state.queue.append(song)
-            song.position = len(music_state.queue) + 1
-            await ctx.send(embed=song.embed(author))
+            music_state.add_to_queue(song)
+            await ctx.send(embed=song.embed(author, "added to queue"))
 
     @commands.command(name="stop", aliases=["disconnect"])
     @commands.guild_only()
@@ -216,7 +234,8 @@ class Music(commands.Cog):
 
         if music_state.voice:
             if music_state.voice.is_playing():
-                music_state.voice.stop()
+                await music_state.voice.disconnect()
+                music_state.cleanup()
                 await ctx.send(":eject: Disconnected!")
         else:
             await ctx.send(":no_entry_sign: I'm not connected to voice!")
@@ -283,12 +302,12 @@ class Music(commands.Cog):
     @commands.guild_only()
     @is_dj()
     async def repeat(self, ctx):
-        _repeat = ctx.music_state.repeat
-        if not _repeat:
-            _repeat = True
+        music_state = ctx.music_state
+        if music_state.mode != "repeat":
+            music_state.mode = "repeat"
             await ctx.send(":repeat_one: Repeat on!")
         else:
-            _repeat = False
+            music_state.mode = None
             await ctx.send(":repeat_one: Repeat off!")
 
     @commands.command(name="loop", aliases=["l"])
@@ -296,12 +315,12 @@ class Music(commands.Cog):
     @is_dj()
     async def loop(self, ctx):
         music_state = ctx.music_state
-        if not music_state.loop_playlist:
-            music_state.loop_playlist = deque([music_state.current_song])\
-                + music_state.queue
+        if music_state.mode != "loop":
+            music_state.mode = "loop"
+            music_state.add_to_queue(music_state.current_song)
             await ctx.send(":repeat: Loop on!")
         else:
-            music_state.loop_playlist = None
+            music_state.mode = None
             await ctx.send(":repeat: Loop off!")
 
     @commands.command(name="queue", aliases=["q"])
@@ -314,24 +333,62 @@ class Music(commands.Cog):
             return
         song = music_state.current_song
 
-        if not music_state.repeat and not music_state.loop_playlist:
+        if not music_state.mode:
             mode = ":play_pause:"
-        elif music_state.loop_playlist:
+        elif music_state.mode == "loop":
             mode = ":repeat:"
-        elif music_state.repeat:
+        elif music_state.mode == "repeat":
             mode = ":repeat_one:"
 
         embed = discord.Embed(title=f'Queue for {ctx.guild}',
                               colour=discord.Colour(0xf8e71c),
                               description=f"{mode} Now Playing:\n "
-                              f"[{song.title}]"
-                              f"| `{song.duration} Requested by "
-                              f"{song.requested_by.mention}`\n\n\n"
+                              f"[{song.title}]({song.url}) "
+                              f"| {song.duration} Requested by "
+                              f"{song.requested_by.mention}\n\n\n"
                               f":arrow_down: Up next :arrow_down:")
-        for song in queue:
+        for i, song in enumerate(queue):
+            music_state.queue[i].position = i + 1
             embed.add_field(name=f"{song.position}.",
                             value=f"[{song.title}]({song.url}) "
-                            f"| `{song.duration} "
-                            f"Requested by {song.requested_by.mention}`",
+                            f"| {song.duration} "
+                            f"Requested by {song.requested_by.mention}",
                             inline=False)
         await ctx.send(embed=embed)
+
+    @commands.command(name="remove")
+    @commands.guild_only()
+    async def remove(self, ctx, position: int):
+        music_state = ctx.music_state
+        song = music_state.queue[position - 1]
+        try:
+            del music_state.queue[position - 1]
+            await ctx.send(embed=song.embed(ctx.author, "removed from queue"))
+        except IndexError:
+            await ctx.send(":no_entry_sign: Position out of range!")
+
+    @commands.command(name="playnext")
+    @commands.guild_only()
+    async def play_next(self, ctx, position: int = 1):
+        music_state = ctx.music_state
+        song = music_state.queue[position - 1]
+        try:
+            del music_state.queue[position - 1]
+            music_state.queue.appendleft(song)
+            await ctx.send(embed=song.embed(ctx.author, "moved next in queue"
+                                            ))
+        except IndexError:
+            await ctx.send(":no_entry_sign: Position out of range!")
+
+    @commands.command(name="playlater")
+    @commands.guild_only()
+    async def play_later(self, ctx, position: int = 1):
+        music_state = ctx.music_state
+        song = music_state.queue[position - 1]
+        try:
+            del music_state.queue[position - 1]
+            music_state.queue.append(song)
+            await ctx.send(embed=song.embed(ctx.author, "moved later in queue"
+                                            ))
+        except IndexError:
+            await ctx.send(":no_entry_sign: Position out of range!")
