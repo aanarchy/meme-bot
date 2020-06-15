@@ -129,4 +129,4 @@ dmypy.json
 *.webm
 
 # Project files
-config.py
+config.toml
