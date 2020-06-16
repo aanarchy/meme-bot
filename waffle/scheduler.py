@@ -3,12 +3,14 @@ from datetime import timedelta
 import time
 import asyncio
 
+import discord.utils
+
 import waffle
-from waffle.database import add, modify, get_collection
-from waffle.config import CONFIG
+import waffle.config
+import waffle.database as database
 
 
-CONFIG = CONFIG['database']
+CONFIG = waffle.config.CONFIG['database']
 
 
 def string_to_seconds(string):
@@ -32,7 +34,7 @@ def string_to_seconds(string):
 
 
 def set_task(ctx, function, duration, **kwargs):
-    add('tasks', {
+    database.add('tasks', 'tasklist', {
         'message_id': ctx.message.id,
         'time': int(string_to_seconds(duration) + time.time()),
         'function': function,
@@ -40,12 +42,15 @@ def set_task(ctx, function, duration, **kwargs):
     })
 
 
-async def check_for_tasks(tasks):
+async def check_for_tasks():
+    tasks = database.client['tasks']['tasklist'].find({})
     for task in tasks:
         if time.time() >= task['time']:
             kwargs = task['kwargs']
-            ctx = await waffle.bot.get_context(waffle.bot.fetch_message(task['message_id']))
+            message = discord.utils.get(waffle.bot.cached_messages, id=task['message_id'])
+            ctx = await waffle.bot.get_context(message)
             function = task['function']
             await ctx.invoke(function, **kwargs)
+            database.remove('tasks', 'tasklist', {'message_id': task['message_id']})
     await asyncio.sleep(CONFIG['check_interval'])
-    check_for_tasks(get_collection('tasks'))
+    await check_for_tasks()

@@ -1,6 +1,8 @@
 """Debug commands."""
 from discord.ext import commands
 
+import waffle.scheduler
+
 
 def setup(bot):
     """Set up the cog."""
@@ -45,3 +47,10 @@ class Debug(commands.Cog):
         """Log out of the bot user."""
         self.bot.load_extension(f'waffle.{cog}')
         await ctx.send(f"{cog} has been loaded.")
+
+    @commands.command()
+    @commands.is_owner()
+    async def runcheck(self, ctx):
+        """Runs check_for_task"""
+        await waffle.scheduler.check_for_tasks()
+    

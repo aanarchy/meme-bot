@@ -8,9 +8,9 @@ from collections import deque
 import discord
 from discord.ext import commands
 import youtube_dl
-from waffle.config import CONFIG
+import waffle.config
 
-CONFIG = CONFIG['config']
+CONFIG = waffle.config.CONFIG['config']
 
 def setup(bot):
     """Sets up the cog."""

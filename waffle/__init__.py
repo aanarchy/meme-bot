@@ -1,9 +1,10 @@
-from waffle.config import CONFIG
+import asyncio
+
+import waffle.config 
 from waffle.scheduler import check_for_tasks
-from waffle.database import get_collection
 from discord.ext import commands
 
-CONFIG = CONFIG['bot']
+CONFIG = waffle.config.CONFIG['bot']
 
 bot = commands.Bot(command_prefix=CONFIG['prefix'],
                    description='Morgz is my fav channel')
@@ -32,4 +33,4 @@ for extension in CONFIG["extensions"]:
 
 
 bot.run(CONFIG['token'])
-check_for_tasks(get_collection('tasks'))
+asyncio.create_task(check_for_tasks())

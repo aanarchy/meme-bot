@@ -1,14 +1,12 @@
 """Moderation commands."""
-import asyncio
-
 import discord
 from discord.ext import commands
 import humanize
 
-from waffle.config import CONFIG
+import waffle.config 
 from waffle.scheduler import set_task
 
-CONFIG = CONFIG["config"]
+CONFIG = waffle.config.CONFIG["config"]
 
 
 def setup(bot):
@@ -308,4 +306,4 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     async def tempmute(self, ctx, user: discord.Member, duration, *, reason):
         muted = await ctx.invoke(self.mute, user=user, reason=reason)
-        set_task(ctx, self.unmute, duration, user=user, reason="Tempmute")
+        set_task(ctx, 'waffle.moderation.unmute', duration, user=user.id, reason="Tempmute")

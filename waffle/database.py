@@ -1,42 +1,48 @@
 import os
 from pymongo import MongoClient
-from waffle.config import CONFIG
+import waffle.config
 
-CONFIG = CONFIG['database']
+CONFIG = waffle.config.CONFIG['database']
 
-db = MongoClient(CONFIG['uri'])
+if not CONFIG['uri']:
+    if os.environ.get('MONGODB_URI'):
+        CONFIG['uri'] = os.environ.get('MONGODB_URI')
+    else:
+        CONFIG['uri'] = 'mongodb://localhost:27017/'
+
+client = MongoClient(CONFIG['uri'])
 
 
-def get_collection(collection_name):
-    return getattr(db, collection_name)
+def get_collection(collection_name, database):
+    return client[database][collection_name]
 
 
-def add(collection_name, items):
-    collection = get_collection(collection_name)
+def add(database_name, collection_name, items):
+    collection = client[database_name][collection_name]
     if isinstance(items, list):
         collection.insert_many(items)
     else:
         collection.insert_one(items)
 
 
-def remove(collection_name, key, value, single=False):
-    collection = get_collection(collection_name)
+def remove(database_name, collection_name, key, value, single=False):
+    collection = client[database_name][collection_name]
     if single:
         return collection.delete_one({key: value})
     else:
         return collection.delete_many({key: value})
 
 
-def get(collection_name, key, value, single=False):
-    collection = get_collection(collection_name)
+def get(database_name, collection_name, key, value, single=False):
+    collection = client[database_name][collection_name]
     if single:
         return collection.find_one({key: value})
     else:
         return collection.find({key: value})
 
 
-def modify(collection_name, key, value, single=False):
-    collection = get_collection(collection_name)
+def modify(database_name, collection_name, key, value, single=False):
+    collection = client[database_name][collection_name]
     if single:
         return collection.update_one({key: value})
     else:
