@@ -3,8 +3,8 @@ import discord
 from discord.ext import commands
 import humanize
 
-import waffle.config 
-from waffle.scheduler import set_task
+import waffle.config
+import waffle.scheduler
 
 CONFIG = waffle.config.CONFIG["config"]
 
@@ -28,7 +28,8 @@ class Moderation(commands.Cog):
 
     @staticmethod
     async def mod_log(
-            message_id, time, log_type, user, reason, moderator, duration=None):
+        message_id, time, log_type, user, reason, moderator, duration=None
+    ):
         """Mod logging."""
         embed = discord.Embed(
             title=f"{log_type} for user {user.id}",
@@ -45,9 +46,10 @@ class Moderation(commands.Cog):
         embed.add_field(name="Moderator", value=moderator.mention, inline=True)
         embed.add_field(name="Reason", value=reason, inline=True)
         if duration:
-            embed.add_field(name="Duration:", value=humanize.naturaldelta(
-                duration), inline=True)
-        embed.set_footer(text=f'ID: {message_id}')
+            embed.add_field(
+                name="Duration:", value=humanize.naturaldelta(duration), inline=True
+            )
+        embed.set_footer(text=f"ID: {message_id}")
         return embed
 
     @staticmethod
@@ -162,9 +164,11 @@ class Moderation(commands.Cog):
     @commands.command(name="tempban")
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
-    async def tempban(self, ctx, user: discord.User, duration, *, reason):
+    async def tempban(self, ctx, user: discord.Member, duration, *, reason):
         await ctx.invoke(self.ban, user=user, reason=reason)
-        set_task(ctx, self.unban, duration, user=user, reason="Tempban")
+        waffle.scheduler.set_task(
+            ctx, "moderation.unban", duration, user=user, reason="Tempban"
+        )
 
     @commands.command(name="addrole")
     @commands.guild_only()
@@ -305,5 +309,8 @@ class Moderation(commands.Cog):
     @commands.command(name="tempmute")
     @commands.guild_only()
     async def tempmute(self, ctx, user: discord.Member, duration, *, reason):
-        muted = await ctx.invoke(self.mute, user=user, reason=reason)
-        set_task(ctx, 'waffle.moderation.unmute', duration, user=user.id, reason="Tempmute")
+        await ctx.invoke(self.mute, user=user, reason=reason)
+        waffle.scheduler.set_task(
+            ctx, ".moderation.unmute", duration, user=user.id, reason="Tempmute"
+        )
+

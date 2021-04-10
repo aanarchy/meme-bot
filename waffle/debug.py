@@ -2,6 +2,7 @@
 from discord.ext import commands
 
 import waffle.scheduler
+import waffle.database
 
 
 def setup(bot):
@@ -31,21 +32,21 @@ class Debug(commands.Cog):
     @commands.is_owner()
     async def reload(self, ctx, cog):
         """Log out of the bot user."""
-        self.bot.reload_extension(f'waffle.{cog}')
+        self.bot.reload_extension(f"waffle.{cog}")
         await ctx.send(f"{cog} has been reloaded.")
 
     @commands.command()
     @commands.is_owner()
     async def unload(self, ctx, cog):
         """Log out of the bot user."""
-        self.bot.unload_extension(f'waffle.{cog}')
+        self.bot.unload_extension(f"waffle.{cog}")
         await ctx.send(f"{cog} has been unloaded.")
 
     @commands.command()
     @commands.is_owner()
     async def load(self, ctx, cog):
         """Log out of the bot user."""
-        self.bot.load_extension(f'waffle.{cog}')
+        self.bot.load_extension(f"waffle.{cog}")
         await ctx.send(f"{cog} has been loaded.")
 
     @commands.command()
@@ -53,4 +54,11 @@ class Debug(commands.Cog):
     async def runcheck(self, ctx):
         """Runs check_for_task"""
         await waffle.scheduler.check_for_tasks()
-    
+
+    @commands.command()
+    @commands.is_owner()
+    async def clearcollection(self, ctx, database_name, collection_name):
+        """Runs check_for_task"""
+        waffle.database.client[database_name][collection_name].drop()
+        await ctx.send(f"{collection_name} has been cleared.")
+

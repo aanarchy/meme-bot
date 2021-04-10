@@ -1,6 +1,6 @@
 """Music commands."""
 import asyncio
-import pathlib
+from pathlib import Path, PurePath
 import os
 from datetime import timedelta
 from collections import deque
@@ -10,7 +10,8 @@ from discord.ext import commands
 import youtube_dl
 import waffle.config
 
-CONFIG = waffle.config.CONFIG['config']
+CONFIG = waffle.config.CONFIG["config"]
+
 
 def setup(bot):
     """Sets up the cog."""
@@ -22,14 +23,16 @@ class Song:
 
     def __init__(self):
         self.opts = {
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-            'outtmpl': '%(id)s.%(ext)s',
-            'quiet': True,
+            "format": "bestaudio/best",
+            "postprocessors": [
+                {
+                    "key": "FFmpegExtractAudio",
+                    "preferredcodec": "mp3",
+                    "preferredquality": "192",
+                }
+            ],
+            "outtmpl": "%(id)s.%(ext)s",
+            "quiet": True,
         }
         self.youtube = youtube_dl.YoutubeDL(self.opts)
 
@@ -41,15 +44,16 @@ class Song:
             self.title = extracted_info.get("title", None)
             self.duration_seconds = extracted_info.get("duration", None)
             self.duration = str(timedelta(seconds=self.duration_seconds))
-            self.filename = self.video_id + ".mp3"
-            self.thumbnail = f"https://img.youtube.com/vi/{self.video_id}/"\
-                             "maxresdefault.jpg"
+            self.filename = PurePath("./cache/", self.video_id + ".mp3")
+            self.thumbnail = (
+                f"https://img.youtube.com/vi/{self.video_id}/" "maxresdefault.jpg"
+            )
             self.uploader = extracted_info.get("uploader", None)
             self.channel_url = extracted_info.get("channel_url", None)
             self.artist = extracted_info.get("artist", None)
             self.position = len(ctx.music_state.queue) + 1
             self.requested_by = ctx.author
-            if not pathlib.Path(self.filename).exists():
+            if not Path(self.filename).exists():
                 try:
                     return self.youtube.extract_info(self.url, download=True)
                 except youtube_dl.utils.DownloadError:
@@ -69,19 +73,15 @@ class Song:
         return extracted_info
 
     def embed(self, author, action):
-        embed = discord.Embed(title=self.title, url=self.url,
-                              colour=discord.Colour(0xff0000))
+        embed = discord.Embed(
+            title=self.title, url=self.url, colour=discord.Colour(0xFF0000)
+        )
         embed.set_image(url=self.thumbnail)
-        embed.set_author(name=f"{author.name} {action}",
-                         icon_url=author.avatar_url)
-        embed.add_field(name="Uploader", value=self.uploader,
-                        inline=True)
-        embed.add_field(name="Artist", value=self.artist,
-                        inline=True)
-        embed.add_field(name="Position in queue",
-                        value=self.position, inline=True)
-        embed.add_field(name="Duration:",
-                        value=self.duration, inline=True)
+        embed.set_author(name=f"{author.name} {action}", icon_url=author.avatar_url)
+        embed.add_field(name="Uploader", value=self.uploader, inline=True)
+        embed.add_field(name="Artist", value=self.artist, inline=True)
+        embed.add_field(name="Position in queue", value=self.position, inline=True)
+        embed.add_field(name="Duration:", value=self.duration, inline=True)
         return embed
 
 
@@ -92,7 +92,7 @@ class GuildMusicState:
         self.bot = ctx.bot
         self.ctx = ctx
         self.queue = deque()
-        self.queue_capacity = CONFIG['queue_capacity']
+        self.queue_capacity = CONFIG["queue_capacity"]
         self.voice = ctx.guild.voice_client
         self.volume = 0.1
         self.current_song = None
@@ -126,12 +126,14 @@ class GuildMusicState:
             self.queue[i].position = i + 1
 
         self.current_song = song
-        self.voice.play(discord.PCMVolumeTransformer(
-                        discord.FFmpegPCMAudio(song.filename),
-                        volume=self.volume),
-                        after=lambda e: self.loop.create_task(
-                        self.play_next_song(self.next_song_info())
-                        ))
+        self.voice.play(
+            discord.PCMVolumeTransformer(
+                discord.FFmpegPCMAudio(song.filename), volume=self.volume
+            ),
+            after=lambda e: self.loop.create_task(
+                self.play_next_song(self.next_song_info())
+            ),
+        )
 
     def cleanup(self):
         self.mode = None
@@ -157,33 +159,36 @@ class Music(commands.Cog):
 
     def is_dj():
         """Check if a specifed channel exists."""
+
         async def predicate(ctx):
-            if 'dj' in CONFIG:
+            if "dj" in CONFIG:
                 author = ctx.author
                 converter = commands.RoleConverter()
-                dj_role = await converter.convert(ctx, CONFIG['dj'])
+                dj_role = await converter.convert(ctx, CONFIG["dj"])
                 if dj_role in author.roles:
                     return True
                 else:
                     return False
             else:
                 return True
+
         return commands.check(predicate)
 
     async def cog_before_invoke(self, ctx):
-        ctx.music_state = self.states.setdefault(ctx.guild.id, GuildMusicState(
-                                                 ctx, self.bot.loop))
+        ctx.music_state = self.states.setdefault(
+            ctx.guild.id, GuildMusicState(ctx, self.bot.loop)
+        )
         ctx.music_state.voice = ctx.guild.voice_client
 
     @staticmethod
     async def on_ready():
         """Prints a message when the cog is ready."""
-        print('Music is ready!')
+        print("Music is ready!")
 
     @staticmethod
     def clear_song_cache():
         """Clears downloaded songs."""
-        songs = os.listdir()
+        songs = Path.iterdir("cache")
         for item in songs:
             if item.endswith(".mp3"):
                 os.remove(item)
@@ -201,13 +206,14 @@ class Music(commands.Cog):
             return
 
         if not author.voice:
-            await ctx.send(f":no_entry_sign: {ctx.author.mention}, you are "
-                           "not connected to any voice channel.")
+            await ctx.send(
+                f":no_entry_sign: {ctx.author.mention}, you are "
+                "not connected to any voice channel."
+            )
             return
 
         voice_channel = author.voice.channel
-        if not music_state.voice \
-                or voice_channel != music_state.voice.channel:
+        if not music_state.voice or voice_channel != music_state.voice.channel:
             music_state.voice = await voice_channel.connect()
 
         song = Song()
@@ -220,8 +226,9 @@ class Music(commands.Cog):
             await music_state.play_next_song(music_state.next_song_info())
             await ctx.send(embed=song.embed(author, "added to queue"))
         elif len(music_state.queue) >= music_state.queue_capacity:
-            await ctx.send(":no_entry_sign: "
-                           "The queue is full! Please try again later.")
+            await ctx.send(
+                ":no_entry_sign: " "The queue is full! Please try again later."
+            )
         else:
             music_state.add_to_queue(song)
             await ctx.send(embed=song.embed(author, "added to queue"))
@@ -286,8 +293,7 @@ class Music(commands.Cog):
 
             if music_state.voice:
                 music_state.voice.source.volume = music_state.volume
-                await ctx.send(
-                    f":loud_sound: Changed volume to {music_state.volume}")
+                await ctx.send(f":loud_sound: Changed volume to {music_state.volume}")
             else:
                 await ctx.send(":no_entry_sign: I'm not connected to voice!")
 
@@ -341,20 +347,24 @@ class Music(commands.Cog):
         elif music_state.mode == "repeat":
             mode = ":repeat_one:"
 
-        embed = discord.Embed(title=f'Queue for {ctx.guild}',
-                              colour=discord.Colour(0xf8e71c),
-                              description=f"{mode} Now Playing:\n "
-                              f"[{song.title}]({song.url}) "
-                              f"| {song.duration} Requested by "
-                              f"{song.requested_by.mention}\n\n\n"
-                              f":arrow_down: Up next :arrow_down:")
+        embed = discord.Embed(
+            title=f"Queue for {ctx.guild}",
+            colour=discord.Colour(0xF8E71C),
+            description=f"{mode} Now Playing:\n "
+            f"[{song.title}]({song.url}) "
+            f"| {song.duration} Requested by "
+            f"{song.requested_by.mention}\n\n\n"
+            f":arrow_down: Up next :arrow_down:",
+        )
         for i, song in enumerate(queue):
             music_state.queue[i].position = i + 1
-            embed.add_field(name=f"{song.position}.",
-                            value=f"[{song.title}]({song.url}) "
-                            f"| {song.duration} "
-                            f"Requested by {song.requested_by.mention}",
-                            inline=False)
+            embed.add_field(
+                name=f"{song.position}.",
+                value=f"[{song.title}]({song.url}) "
+                f"| {song.duration} "
+                f"Requested by {song.requested_by.mention}",
+                inline=False,
+            )
         await ctx.send(embed=embed)
 
     @commands.command(name="remove")
@@ -376,8 +386,7 @@ class Music(commands.Cog):
         try:
             del music_state.queue[position - 1]
             music_state.queue.appendleft(song)
-            await ctx.send(embed=song.embed(ctx.author, "moved next in queue"
-                                            ))
+            await ctx.send(embed=song.embed(ctx.author, "moved next in queue"))
         except IndexError:
             await ctx.send(":no_entry_sign: Position out of range!")
 
@@ -389,7 +398,6 @@ class Music(commands.Cog):
         try:
             del music_state.queue[position - 1]
             music_state.queue.append(song)
-            await ctx.send(embed=song.embed(ctx.author, "moved later in queue"
-                                            ))
+            await ctx.send(embed=song.embed(ctx.author, "moved later in queue"))
         except IndexError:
             await ctx.send(":no_entry_sign: Position out of range!")

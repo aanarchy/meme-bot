@@ -1,11 +1,15 @@
-import waffle
 import asyncio
+
+import waffle.config
+import waffle.scheduler
 
 from discord.ext import commands
 
 CONFIG = waffle.config.CONFIG["bot"]
 
-bot = waffle.bot
+bot = commands.Bot(
+    command_prefix=CONFIG["prefix"], description="Morgz is my fav channel"
+)
 
 
 @bot.event

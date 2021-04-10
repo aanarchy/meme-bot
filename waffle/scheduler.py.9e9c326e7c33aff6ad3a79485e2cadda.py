@@ -1,12 +1,12 @@
 import re
-import datetime
+from datetime import timedelta
+import time
+import importlib
 import asyncio
 
 import discord.utils
-from sqlalchemy.sql import select
 
 import waffle
-from waffle.tables import TasksTable
 
 CONFIG = waffle.config.CONFIG["database"]
 
@@ -24,26 +24,24 @@ def string_to_seconds(string):
     return seconds
 
 
-async def set_task(ctx, function, duration, **kwargs):
-    async with waffle.database.engine.begin() as conn:
-        await conn.execute(
-            TasksTable.insert(),
-            {
-                "channel_id": ctx.channel.id,
-                "message_id": ctx.message.id,
-                "time": datetime.timedelta(seconds=string_to_seconds(duration))
-                + datetime.now(),
-                "function": function,
-                "kwargs": kwargs,
-            },
-        )
+def set_task(ctx, function, duration, **kwargs):
+    waffle.database.add(
+        "tasks",
+        "tasklist",
+        {
+            "channel_id": ctx.channel.id,
+            "message_id": ctx.message.id,
+            "time": int(string_to_seconds(duration) + time.time()),
+            "function": function,
+            "kwargs": kwargs,
+        },
+    )
 
 
 async def check_for_tasks():
-    async with waffle.database.engine.begin() as conn:
-        tasks = await conn.execute(select(TasksTable))
+    tasks = waffle.database.client["tasks"]["tasklist"].find({})
     for task in tasks:
-        if datetime.time() >= task["time"]:
+        if time.time() >= task["time"]:
             kwargs = task["kwargs"]
             channel = waffle.bot.get_channel(task["channel_id"])
             message = await channel.fetch_message(task["message_id"])

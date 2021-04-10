@@ -1,36 +1,11 @@
-import asyncio
-
-import waffle.config 
-from waffle.scheduler import check_for_tasks
 from discord.ext import commands
 
-CONFIG = waffle.config.CONFIG['bot']
+import waffle.config
+import waffle.scheduler
 
-bot = commands.Bot(command_prefix=CONFIG['prefix'],
-                   description='Morgz is my fav channel')
-
-
-@bot.event
-async def on_ready():
-    """Print when the bot is ready."""
-    print("*Waffles*")
-    print('Logged in as')
-    print(bot.user.id)
+CONFIG = waffle.config.CONFIG["bot"]
 
 
-@bot.command()
-async def ping(ctx):
-    """Send pong in chat."""
-    await ctx.send("pong!")
-
-
-for extension in CONFIG["extensions"]:
-    try:
-        bot.load_extension(f"waffle.{extension}")
-    except Exception as e:
-        print('Failed to load extension {} because of error {}.'.format(
-              extension, e))
-
-
-bot.run(CONFIG['token'])
-asyncio.create_task(check_for_tasks())
+bot = commands.Bot(
+    command_prefix=CONFIG["prefix"], description="Morgz is my fav channel"
+)
