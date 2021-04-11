@@ -26,7 +26,7 @@ class Debug(commands.Cog):
     @commands.is_owner()
     async def logout(self, ctx):
         """Log out of the bot user."""
-        await self.bot.logout()
+        await self.bot.close()
 
     @commands.command()
     @commands.is_owner()
@@ -61,4 +61,3 @@ class Debug(commands.Cog):
         """Runs check_for_task"""
         waffle.database.client[database_name][collection_name].drop()
         await ctx.send(f"{collection_name} has been cleared.")
-

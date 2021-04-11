@@ -1,3 +1,5 @@
+import asyncio
+
 import waffle
 
 from discord.ext import commands
@@ -23,7 +25,7 @@ async def ping(ctx):
 
 @bot.command()
 async def test(ctx, id):
-    msg = ctx.author.fetch_message(id)
+    msg = await ctx.channel.fetch_message(id)
     await ctx.send(msg.content)
 
 
@@ -34,5 +36,5 @@ for extension in CONFIG["extensions"]:
         print("Failed to load extension {} because of error {}.".format(extension, e))
 
 
+asyncio.ensure_future(waffle.scheduler.check_for_tasks())
 bot.run(CONFIG["token"])
-bot.loop.run_until_complete(waffle.scheduler.check_for_tasks())

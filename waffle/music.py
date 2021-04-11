@@ -284,12 +284,12 @@ class Music(commands.Cog):
     @commands.guild_only()
     @is_dj()
     async def volume(self, ctx, volume: float):
-        """Changes voice client volume. Args: <0.0-0.1>"""
-        if volume > 0.1:
-            await ctx.send(":no_entry_sign: Volume over 0.1 is prohibited.")
+        """Changes voice client volume. Args: <0.0-100>"""
+        if volume > 100:
+            await ctx.send(":no_entry_sign: Volume over 100 is prohibited.")
         else:
             music_state = ctx.music_state
-            music_state.volume = volume
+            music_state.volume = volume / 1000
 
             if music_state.voice:
                 music_state.voice.source.volume = music_state.volume

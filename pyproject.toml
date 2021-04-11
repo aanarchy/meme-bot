@@ -6,13 +6,13 @@ authors = ["faith <jamienibtong@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-"discord.py" = {extras = ["voice"], version = "^1.7"}
 youtube-dl = "*"
 humanize = "*"
 toml = "*"
 SQLAlchemy = "*"
 alembic = "*"
 aiosqlite = "*"
+"discord.py" = {extras = ["voice"], version = "^1.7.1"}
 
 [tool.poetry.dev-dependencies]
 bandit = "*"

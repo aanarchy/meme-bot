@@ -9,7 +9,7 @@ from sqlalchemy.sql import select
 import waffle
 from waffle.tables import TasksTable
 
-CONFIG = waffle.config.CONFIG["database"]
+CONFIG = waffle.config.CONFIG
 
 
 def string_to_seconds(string):
@@ -25,16 +25,18 @@ def string_to_seconds(string):
     return seconds
 
 
-async def set_task(ctx, function, duration, **kwargs):
+async def set_task(ctx, function, duration, user_id):
     async with waffle.database.engine.begin() as conn:
         await conn.execute(
             TasksTable.insert(),
             {
-                "channel_id": ctx.channel.id,
+                "guild_id": ctx.guild.id,
                 "message_id": ctx.message.id,
+                "channel_id": ctx.channel.id,
                 "time": datetime.timedelta(seconds=string_to_seconds(duration))
                 + datetime.datetime.now(),
                 "function": function,
+                "user_id": user_id,
             },
         )
 
@@ -44,24 +46,30 @@ async def check_for_tasks():
         tasks = await conn.execute(select(TasksTable))
     for task in tasks:
         if datetime.datetime.now() >= task["time"]:
-            message = await channel.fetch_message(task["message_id"])
-            if message:
+            if task["function"] == "unmute":
+                guild = waffle.bot.get_guild(task["channel_id"])
+                channel = guild.get_channel(task["channel_id"])
+                message = await channel.fetch_message(task["message_id"])
                 ctx = await waffle.bot.get_context(message)
+                user = guild.get_member(task["user_id"])
+                muted = discord.utils.get(
+                    ctx.guild.roles, name=CONFIG["config"]["mute"]
+                )
+
                 if muted in user.roles:
-                    await user.remove_roles(muted, reason=reason)
-                    embed = await waffle.moderation.Moderation.mod_log(
-                        ctx.message.id,
-                        ctx.message.created_at,
+                    await user.remove_roles(muted, reason="Tempmute")
+                    await waffle.moderation.Moderation.mod_log(
+                        ctx,
                         "Unmute",
                         user,
-                        reason,
-                        author,
+                        "Tempmute",
+                        ctx.author,
                     )
-            async with waffle.database.engine.begin() as conn:
-                conn.execute(
-                    TasksTable.delete().where(
-                        TasksTable.c.message_id == task["message_id"]
+                async with waffle.database.engine.begin() as conn:
+                    await conn.execute(
+                        TasksTable.delete().where(
+                            TasksTable.c.message_id == task["message_id"]
+                        )
                     )
-                )
-    await asyncio.sleep(CONFIG["check_interval"])
+    await asyncio.sleep(CONFIG["database"]["check_interval"])
     await check_for_tasks()
