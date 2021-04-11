@@ -122,8 +122,8 @@ class GuildMusicState:
                 self.cleanup()
             return
 
-        for i, song in enumerate(self.queue):
-            self.queue[i].position = i - 1
+        for index, item in enumerate(self.queue):
+            item.position = index + 1
 
         self.current_song = song
         self.voice.play(
