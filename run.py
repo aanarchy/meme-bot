@@ -15,6 +15,7 @@ async def on_ready():
     print("*Waffles*")
     print("Logged in as")
     print(bot.user.id)
+    asyncio.ensure_future(waffle.scheduler.check_for_tasks())
 
 
 @bot.command()
@@ -36,5 +37,4 @@ for extension in CONFIG["extensions"]:
         print("Failed to load extension {} because of error {}.".format(extension, e))
 
 
-asyncio.ensure_future(waffle.scheduler.check_for_tasks())
 bot.run(CONFIG["token"])

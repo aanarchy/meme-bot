@@ -7,6 +7,7 @@ import discord.utils
 from sqlalchemy.sql import select
 
 import waffle
+import waffle.moderation
 from waffle.tables import TasksTable
 
 CONFIG = waffle.config.CONFIG
@@ -47,11 +48,13 @@ async def check_for_tasks():
     for task in tasks:
         if datetime.datetime.now() >= task["time"]:
             if task["function"] == "unmute":
-                guild = waffle.bot.get_guild(task["channel_id"])
+                guild_id = task["guild_id"]
+                user_id = task["user_id"]
+                guild = waffle.bot.get_guild(guild_id)
                 channel = guild.get_channel(task["channel_id"])
                 message = await channel.fetch_message(task["message_id"])
                 ctx = await waffle.bot.get_context(message)
-                user = guild.get_member(task["user_id"])
+                user = guild.get_member(user_id)
                 muted = discord.utils.get(
                     ctx.guild.roles, name=CONFIG["config"]["mute"]
                 )

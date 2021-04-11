@@ -123,7 +123,7 @@ class GuildMusicState:
             return
 
         for i, song in enumerate(self.queue):
-            self.queue[i].position = i + 1
+            self.queue[i].position = i - 1
 
         self.current_song = song
         self.voice.play(
@@ -371,8 +371,8 @@ class Music(commands.Cog):
     @commands.guild_only()
     async def remove(self, ctx, position: int):
         music_state = ctx.music_state
-        song = music_state.queue[position - 1]
         try:
+            song = music_state.queue[position - 1]
             del music_state.queue[position - 1]
             await ctx.send(embed=song.embed(ctx.author, "removed from queue"))
         except IndexError:
@@ -382,10 +382,11 @@ class Music(commands.Cog):
     @commands.guild_only()
     async def play_next(self, ctx, position: int):
         music_state = ctx.music_state
-        song = music_state.queue[position - 1]
         try:
+            song = music_state.queue[position - 1]
             del music_state.queue[position - 1]
             music_state.queue.appendleft(song)
+            song.position = 1
             await ctx.send(embed=song.embed(ctx.author, "moved next in queue"))
         except IndexError:
             await ctx.send(":no_entry_sign: Position out of range!")
@@ -394,10 +395,11 @@ class Music(commands.Cog):
     @commands.guild_only()
     async def play_later(self, ctx, position: int):
         music_state = ctx.music_state
-        song = music_state.queue[position - 1]
         try:
+            song = music_state.queue[position - 1]
             del music_state.queue[position - 1]
             music_state.queue.append(song)
+            song.position = len(music_state.queue)
             await ctx.send(embed=song.embed(ctx.author, "moved later in queue"))
         except IndexError:
             await ctx.send(":no_entry_sign: Position out of range!")
