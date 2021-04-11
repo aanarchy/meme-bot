@@ -1,4 +1,4 @@
-from sqlalchemy import Table, Integer, String, Column, DateTime
+from sqlalchemy import Table, Integer, String, Column, DateTime, PickleType
 import waffle.database
 
 metadata = waffle.database.metadata
@@ -9,6 +9,5 @@ TasksTable = Table(
     Column("channel_id", Integer),
     Column("message_id", Integer, primary_key=True),
     Column("time", DateTime, nullable=False),
-    Column("function", String(60), nullable=False),
-    Column("kwargs", String(50), nullable=False),
+    Column("function", String(32), nullable=False),
 )

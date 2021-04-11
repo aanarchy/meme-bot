@@ -127,6 +127,7 @@ dmypy.json
 # media files
 *.mp3
 *.webm
+*.opus
 
 # Project files
 config.toml

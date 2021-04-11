@@ -11,9 +11,9 @@ extensions = ['music', 'debug', 'moderation', 'errors']
 #dj = 'DJ'
 #log_channel = 'mod-log'
 #welcome_channel = 'welcome-leave'
-#mute = 'Edgelord' 
-    
+#mute = 'Edgelord'
+
 [database]
-# Period of time in between checking for tasks 
-check_interval = 3600   
-#uri = 'mongodb://'
+# Period of time in between checking for tasks
+check_interval = 3600
+uri = 'sqlite+aiosqlite:///waffle.db'

@@ -310,7 +310,7 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     async def tempmute(self, ctx, user: discord.Member, duration, *, reason):
         await ctx.invoke(self.mute, user=user, reason=reason)
-        waffle.scheduler.set_task(
+        await waffle.scheduler.set_task(
             ctx, ".moderation.unmute", duration, user=user.id, reason="Tempmute"
         )
 

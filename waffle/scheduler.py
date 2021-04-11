@@ -1,4 +1,5 @@
 import re
+import sys
 import datetime
 import asyncio
 
@@ -32,9 +33,8 @@ async def set_task(ctx, function, duration, **kwargs):
                 "channel_id": ctx.channel.id,
                 "message_id": ctx.message.id,
                 "time": datetime.timedelta(seconds=string_to_seconds(duration))
-                + datetime.now(),
+                + datetime.datetime.now(),
                 "function": function,
-                "kwargs": kwargs,
             },
         )
 
@@ -43,15 +43,25 @@ async def check_for_tasks():
     async with waffle.database.engine.begin() as conn:
         tasks = await conn.execute(select(TasksTable))
     for task in tasks:
-        if datetime.time() >= task["time"]:
-            kwargs = task["kwargs"]
-            channel = waffle.bot.get_channel(task["channel_id"])
+        if datetime.datetime.now() >= task["time"]:
             message = await channel.fetch_message(task["message_id"])
-            # message = discord.utils.get(waffle.bot.cached_messages, id=task['message_id'])
-            ctx = await waffle.bot.get_context(message)
-            await ctx.invoke(".waffle.moderation.unmute", **kwargs)
-            waffle.database.remove(
-                "tasks", "tasklist", {"message_id": task["message_id"]}
-            )
+            if message:
+                ctx = await waffle.bot.get_context(message)
+                if muted in user.roles:
+                    await user.remove_roles(muted, reason=reason)
+                    embed = await waffle.moderation.Moderation.mod_log(
+                        ctx.message.id,
+                        ctx.message.created_at,
+                        "Unmute",
+                        user,
+                        reason,
+                        author,
+                    )
+            async with waffle.database.engine.begin() as conn:
+                conn.execute(
+                    TasksTable.delete().where(
+                        TasksTable.c.message_id == task["message_id"]
+                    )
+                )
     await asyncio.sleep(CONFIG["check_interval"])
     await check_for_tasks()

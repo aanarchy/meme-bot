@@ -27,11 +27,11 @@ class Song:
             "postprocessors": [
                 {
                     "key": "FFmpegExtractAudio",
-                    "preferredcodec": "mp3",
+                    "preferredcodec": "opus",
                     "preferredquality": "192",
                 }
             ],
-            "outtmpl": "%(id)s.%(ext)s",
+            "outtmpl": "cache/%(id)s.%(ext)s",
             "quiet": True,
         }
         self.youtube = youtube_dl.YoutubeDL(self.opts)
@@ -44,7 +44,7 @@ class Song:
             self.title = extracted_info.get("title", None)
             self.duration_seconds = extracted_info.get("duration", None)
             self.duration = str(timedelta(seconds=self.duration_seconds))
-            self.filename = PurePath("./cache/", self.video_id + ".mp3")
+            self.filename = PurePath("cache/", self.video_id + ".opus")
             self.thumbnail = (
                 f"https://img.youtube.com/vi/{self.video_id}/" "maxresdefault.jpg"
             )
@@ -190,7 +190,7 @@ class Music(commands.Cog):
         """Clears downloaded songs."""
         songs = Path.iterdir("cache")
         for item in songs:
-            if item.endswith(".mp3"):
+            if item.endswith(".opus"):
                 os.remove(item)
 
     @commands.command(name="play", aliases=["p"])
@@ -380,7 +380,7 @@ class Music(commands.Cog):
 
     @commands.command(name="playnext")
     @commands.guild_only()
-    async def play_next(self, ctx, position: int = 1):
+    async def play_next(self, ctx, position: int):
         music_state = ctx.music_state
         song = music_state.queue[position - 1]
         try:
@@ -392,7 +392,7 @@ class Music(commands.Cog):
 
     @commands.command(name="playlater")
     @commands.guild_only()
-    async def play_later(self, ctx, position: int = 1):
+    async def play_later(self, ctx, position: int):
         music_state = ctx.music_state
         song = music_state.queue[position - 1]
         try:
