@@ -24,12 +24,6 @@ async def ping(ctx):
     await ctx.send("pong!")
 
 
-@bot.command()
-async def test(ctx, id):
-    msg = await ctx.channel.fetch_message(id)
-    await ctx.send(msg.content)
-
-
 for extension in CONFIG["extensions"]:
     try:
         bot.load_extension(f"waffle.{extension}")
