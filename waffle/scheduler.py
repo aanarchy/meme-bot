@@ -47,32 +47,37 @@ async def check_for_tasks():
         tasks = await conn.execute(select(TasksTable))
     for task in tasks:
         if datetime.datetime.now() >= task["time"]:
+            guild_id = task["guild_id"]
+            user_id = task["user_id"]
+            guild = waffle.bot.get_guild(guild_id)
+            channel = guild.get_channel(task["channel_id"])
+            message = await channel.fetch_message(task["message_id"])
+            ctx = await waffle.bot.get_context(message)
+            user = guild.get_member(user_id)
+
             if task["function"] == "unmute":
-                guild_id = task["guild_id"]
-                user_id = task["user_id"]
-                guild = waffle.bot.get_guild(guild_id)
-                channel = guild.get_channel(task["channel_id"])
-                message = await channel.fetch_message(task["message_id"])
-                ctx = await waffle.bot.get_context(message)
-                user = guild.get_member(user_id)
                 muted = discord.utils.get(
                     ctx.guild.roles, name=CONFIG["config"]["mute"]
                 )
 
                 if muted in user.roles:
                     await user.remove_roles(muted, reason="Tempmute")
-                    await waffle.moderation.Moderation.mod_log(
-                        ctx,
-                        "Unmute",
-                        user,
-                        "Tempmute",
-                        ctx.author,
+                await waffle.moderation.Moderation.mod_log(
+                    ctx, "Unmute", user, "Tempmute"
+                )
+            elif task["function"] == "unban":
+                banned = await guild.fetch_ban(user)
+                if banned:
+                    await guild.unban(user, reason="Tempban")
+                await waffle.moderation.Moderation.mod_log(
+                    ctx, "Unban", user, "Tempban"
+                )
+            async with waffle.database.engine.begin() as conn:
+                await conn.execute(
+                    TasksTable.delete().where(
+                        TasksTable.c.message_id == task["message_id"]
                     )
-                async with waffle.database.engine.begin() as conn:
-                    await conn.execute(
-                        TasksTable.delete().where(
-                            TasksTable.c.message_id == task["message_id"]
-                        )
-                    )
+                )
+
     await asyncio.sleep(CONFIG["database"]["check_interval"])
     await check_for_tasks()

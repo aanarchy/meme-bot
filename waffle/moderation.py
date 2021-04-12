@@ -27,8 +27,9 @@ class Moderation(commands.Cog):
         print("Moderation is ready!")
 
     @staticmethod
-    async def mod_log(ctx, log_type, user, reason, moderator, duration=None):
+    async def mod_log(ctx, log_type, user, reason, duration=None):
         """Mod logging."""
+        moderator = ctx.author
         embed = discord.Embed(
             title=f"{log_type} for user {user.id}",
             colour=discord.Colour(0xF8E71C),
@@ -91,12 +92,11 @@ class Moderation(commands.Cog):
         Kicks the specified user.
         Syntax: kick <user> <reason>
         """
-        author = ctx.author
         reason = "None specified"
         if not author.top_role > user.top_role:
             raise commands.MissingPermissions("Is superset")
         await user.kick(reason=reason)
-        await self.mod_log(ctx, "Kick", user, reason, author)
+        await self.mod_log(ctx, "Kick", user, reason)
 
     @commands.command(name="ban", aliases=["b"])
     @commands.guild_only()
@@ -106,12 +106,11 @@ class Moderation(commands.Cog):
         Bans the specified user.
         Syntax: ban <user> <reason>
         """
-        author = ctx.author
         reason = "None specified"
-        if not author.top_role > user.top_role:
+        if not ctx.author.top_role > user.top_role:
             raise commands.MissingPermissions("Is superset")
         await user.ban(reason=reason)
-        await self.mod_log(ctx, "Ban", user, reason, author)
+        await self.mod_log(ctx, "Ban", user, reason)
 
     @commands.command(name="unban", aliases=["pardon"])
     @commands.guild_only()
@@ -121,13 +120,12 @@ class Moderation(commands.Cog):
         Unbans the specified user.
         Syntax: unban <user> <reason>
         """
-        author = ctx.author
         guild = ctx.guild
         reason = "None specified"
         banned = await guild.fetch_ban(user)
         if banned:
             await guild.unban(user, reason=reason)
-            await self.mod_log(ctx, "Unban", user, reason, author)
+            await self.mod_log(ctx, "Unban", user, reason)
 
     @commands.command(name="tempban")
     @commands.guild_only()
@@ -161,12 +159,11 @@ class Moderation(commands.Cog):
         Remove a role from the specified user.
         Syntax: removerole <user> <role>
         """
-        author = ctx.author
         reason = "None specified"
-        if not author.top_role > role:
+        if not ctx.author.top_role > role:
             raise commands.missingpermissions("is superset")
         await user.remove_roles(role)
-        await self.mod_log(ctx, "Remove role", user, reason, author)
+        await self.mod_log(ctx, "Remove role", user, reason)
 
     @commands.command(name="mute", aliases=["m"])
     @commands.guild_only()
@@ -175,18 +172,17 @@ class Moderation(commands.Cog):
         Mute the specified user.
         Syntax: mute <user> <reason>
         """
-        author = ctx.author
         guild = ctx.guild
         mute_role = discord.utils.get(guild.roles, name=CONFIG["mute"])
         if mute_role is None and CONFIG["mute"]:
             await guild.create_role(name=CONFIG["mute"])
 
-        if author.top_role > user.top_role and mute_role:
+        if ctx.author.top_role > user.top_role and mute_role:
             if mute_role in user.roles:
                 await ctx.send(f":no_entry_sign: {user.mention} is already muted!")
                 return
             await user.add_roles(mute_role, reason=reason)
-            await self.mod_log(ctx, "Mute", user, reason, author)
+            await self.mod_log(ctx, "Mute", user, reason)
         elif not CONFIG["mute"]:
             ctx.send(":no_entry_sign: Muting is disabled!")
         else:
@@ -199,18 +195,16 @@ class Moderation(commands.Cog):
         Unmute the specified user.
         Syntax: unmute <user> <reason>
         """
-        author = ctx.author
         guild = ctx.guild
         muted = discord.utils.get(guild.roles, name=CONFIG["mute"])
-        if author.top_role > user.top_role:
+        if ctx.author.top_role > user.top_role:
             if muted in user.roles:
                 await user.remove_roles(muted, reason=reason)
                 await self.mod_log(
                     ctx,
                     "Unmute",
                     user,
-                    reason,
-                    author,
+                    reason
                 )
             else:
                 await ctx.send(f":no_entry_sign: {user.mention} " "is not muted!")

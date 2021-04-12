@@ -2,11 +2,11 @@
 
 This is my personal discord bot.
 
+### Show and Tell:
+- All moderation commands you can think of (Tempban, tempmute all included)
+- Playing music from youtube (with a queue)
+
+
 ### To do:
-- Reinforce mute command with better permission checks
-- Improve join command to be able to specify channel
-- Add voting for skip command
-- Add loop command
-- Add specific user targeted clear commands
-- Implement tempban and tempmute
-- Implement custom help command
+- Setup logging
+- Add some games?
