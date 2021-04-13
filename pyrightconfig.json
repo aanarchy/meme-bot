@@ -1,4 +1,20 @@
 {
-  "venv": "./.venv",
-  "typeCheckingMode": "off"
+  "exclude": [ ".venv" ],
+  "venvPath": "./.venv/",
+  "typingsPath": "./typestubs",
+
+  "typeCheckingMode": "off",
+  "reportTypeshedErrors": false,
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+
+  "executionEnvironments": [
+    {
+      "root": "./",
+      "venv": "./",
+      "extraPaths": [
+        "./3rd-modules"
+      ]
+    }
+  ]
 }
