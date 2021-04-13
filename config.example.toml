@@ -4,7 +4,7 @@ title = "waffle-bot example configuration"
 # Add your own bot token inside the quotation marks in the line below
 token = ''
 prefix = 'waf '
-extensions = ['music', 'debug', 'moderation', 'errors']
+extensions = ['music', 'moderation', 'errors']
 
 [config]
 #autorole = 'Member'
